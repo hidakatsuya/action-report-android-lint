@@ -1,13 +1,12 @@
-name: 'Wait'
-description: 'Wait a designated number of milliseconds'
+name: "Check and report Android Lint result"
+description: "A GitHub Action to check and report Android Lint result"
 inputs:
-  milliseconds:  # id of input
-    description: 'number of milliseconds to wait'
+  result-path:
+    description: "Path or glob path pattern for Android Lint result XML file"
     required: true
-    default: '1000'
-outputs:
-  time: # output will be available to future steps
-    description: 'The current time after waiting'
+  ignore-warning:
+    description: "Setting whether to ignore warnings"
+    default: false
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: "node16"
+  main: "dist/index.js"
