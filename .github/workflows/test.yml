@@ -14,6 +14,10 @@ jobs:
   # test action works running from the graph
   test:
     runs-on: ubuntu-latest
+
+    env:
+      RUN_FAILURE_TEST: true
+
     steps:
     - uses: actions/checkout@v3
     - uses: ./
@@ -24,3 +28,8 @@ jobs:
       with:
         result-path: "__tests__/xml/failure2.xml"
         ignore-warning: true
+    - uses: ./
+      if: env.RUN_FAILURE_TEST == 'true'
+      with:
+        result-path: "__tests__/xml/failure*.xml"
+        ignore-warning: false
