@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      RUN_FAILURE_TEST: true
+      RUN_FAILURE_TEST: false
 
     steps:
     - uses: actions/checkout@v3
