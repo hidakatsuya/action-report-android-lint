@@ -1,6 +1,7 @@
 const fs = require("fs")
 const { globSync } = require("glob")
 const { XMLParser } = require("fast-xml-parser")
+const group = require("array.prototype.group")
 
 class Issue {
   /**
@@ -54,8 +55,12 @@ class Issue {
     return `${this.attr("id")}: ${this.attr("message")}`
   }
 
-  get errorLine() {
-    return [this.attr("errorLine1"), this.attr("errorLine2")].join("\n")
+  get errorLine1() {
+    return this.attr("errorLine1")
+  }
+
+  get errorLine2() {
+    return this.attr("errorLine2")
   }
 }
 
@@ -94,11 +99,19 @@ class Results {
     return this.failures.length === 0
   }
 
-  failures(fn) {
+  failuresEach(fn) {
     this.failures.forEach(({ path, result }) => {
       const { errors, warnings } = result
-      fn({ path, errors, warnings })
+      fn({
+        xmlPath: path,
+        errors: this.#groupIssuesByFile(errors),
+        warnings: this.#groupIssuesByFile(warnings)
+      })
     })
+  }
+
+  #groupIssuesByFile(issues) {
+    return group(issues, ({ file }) => file)
   }
 }
 
@@ -124,7 +137,7 @@ const parse = (xmlData) => {
   return new Result(issues.map(i => new Issue(i)))
 }
 
-const fetchXML = (pathPattern) => {
+function fetchXML(pathPattern) {
   const paths = globSync(pathPattern)
 
   return paths.map(path => {
@@ -133,7 +146,7 @@ const fetchXML = (pathPattern) => {
   })
 }
 
-module.exports = (pathPattern, { ignoreWarning = false } = {}) => {
+function check({ pathPattern, ignoreWarning = false }) {
   const xmls = fetchXML(pathPattern)
 
   if (xmls.length === 0) {
@@ -145,4 +158,11 @@ module.exports = (pathPattern, { ignoreWarning = false } = {}) => {
   })
 
   return new Results(results, ignoreWarning)
+}
+
+module.exports = {
+  check,
+  Issue,
+  Result,
+  Results
 }

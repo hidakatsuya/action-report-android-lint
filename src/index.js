@@ -1,3 +1,3 @@
-const run = require('./run')
+const run = require("./run")
 
 run()
