@@ -1,0 +1,24 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Update major version tag
+      run: |
+        version=$(echo "${{ github.ref }}" | sed -r "s/^.*(v[0-9]).*$/\1/")
+
+        echo "Major Version: $version"
+
+        git config --local user.email "github-actions"
+        git config --local user.name "github-actions@github.com"
+
+        git tag -fa $version -m "Update $version tag"
+        git push -f origin $version
