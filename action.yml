@@ -1,5 +1,9 @@
 name: "Check and report Android Lint result"
-description: "A GitHub Action to check and report Android Lint result"
+description: "A GitHub Action to check and report the results of Android Lint in Job Summaries"
+author: hidakatsuya
+branding:
+  color: green
+  icon: check
 inputs:
   result-path:
     description: "Path or glob path pattern for Android Lint result XML file"
