@@ -92,3 +92,13 @@ test("when the contents of the XML file is invalid", async () => {
   await expect(check({ pathPattern: path.join(__dirname, "xml/invalid.xml") }))
     .rejects.toThrow("Unexpected structure XML file")
 })
+
+describe("basic glob path pattern", () => {
+  test("**/xml/failure*.xml", async () => {
+    const results = await check({ pathPattern: "**/xml/failure*.xml" })
+
+    expect(results.isPassed).toBe(false)
+    expect(results.failures.length).toEqual(2)
+    expect(results.results.length).toEqual(2)
+  })
+})
