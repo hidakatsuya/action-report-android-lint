@@ -1,5 +1,5 @@
 const fs = require("fs")
-const { globSync } = require("glob")
+const glob = require("@actions/glob")
 const { XMLParser } = require("fast-xml-parser")
 const group = require("array.prototype.group")
 
@@ -137,8 +137,10 @@ const parse = (xmlData) => {
   return new Result(issues.map(i => new Issue(i)))
 }
 
-function fetchXML(pathPattern) {
-  const paths = globSync(pathPattern)
+async function fetchXML(pathPattern) {
+  const pattern = Array.isArray(pathPattern) ? pathPattern.join("\n") : pathPattern
+  const globber = await glob.create(pattern)
+  const paths = await globber.glob()
 
   return paths.map(path => {
     const data = fs.readFileSync(path, { encoding: "utf-8" })
@@ -146,8 +148,8 @@ function fetchXML(pathPattern) {
   })
 }
 
-function check({ pathPattern, ignoreWarning = false }) {
-  const xmls = fetchXML(pathPattern)
+async function check({ pathPattern, ignoreWarning = false }) {
+  const xmls = await fetchXML(pathPattern)
 
   if (xmls.length === 0) {
     throw new Error(`No XML file found: ${pathPattern}`)

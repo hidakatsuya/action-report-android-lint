@@ -2,8 +2,8 @@ const { check } = require("../src/check")
 const path = require("path")
 
 describe("single XML file", () => {
-  test("when the result is success", () => {
-    const results = check({ pathPattern: path.join(__dirname, "xml/success1.xml") })
+  test("when the result is success", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/success1.xml") })
 
     expect(results.isPassed).toBe(true)
     expect(results.failures.length).toEqual(0)
@@ -16,8 +16,8 @@ describe("single XML file", () => {
     expect(result.warnings.length).toEqual(0)
   })
 
-  test("when the result is failure", () => {
-    const results = check({ pathPattern: path.join(__dirname, "xml/failure1.xml") })
+  test("when the result is failure", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/failure1.xml") })
 
     expect(results.isPassed).toBe(false)
     expect(results.failures.length).toEqual(1)
@@ -36,28 +36,28 @@ describe("single XML file", () => {
 })
 
 describe("multiple XML files", () => {
-  test("when the all results are success", () => {
-    const results = check({ pathPattern: path.join(__dirname, "xml/success*.xml") })
+  test("when the all results are success", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/success*.xml") })
 
     expect(results.isPassed).toBe(true)
     expect(results.failures.length).toEqual(0)
     expect(results.results.length).toEqual(2)
   })
 
-  test("when the all results are failure", () => {
-    const results = check({ pathPattern: path.join(__dirname, "xml/failure*.xml") })
+  test("when the all results are failure", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/failure*.xml") })
 
     expect(results.isPassed).toBe(false)
     expect(results.failures.length).toEqual(2)
     expect(results.results.length).toEqual(2)
   })
 
-  test("when one of the results is failure", () => {
+  test("when one of the results is failure", async () => {
     const pathPattern = [
       path.join(__dirname, "xml/success1.xml"),
       path.join(__dirname, "xml/failure1.xml")
     ]
-    const results = check({ pathPattern })
+    const results = await check({ pathPattern })
 
     expect(results.isPassed).toBe(false)
     expect(results.failures.length).toEqual(1)
@@ -66,16 +66,16 @@ describe("multiple XML files", () => {
 })
 
 describe("ignoreWarning", () => {
-  test("when true", () => {
-    const results = check({ pathPattern: path.join(__dirname, "xml/failure2.xml"), ignoreWarning: true })
+  test("when true", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/failure2.xml"), ignoreWarning: true })
 
     expect(results.isPassed).toBe(true)
     expect(results.failures.length).toEqual(0)
     expect(results.results.length).toEqual(1)
   })
 
-  test("when false", () => {
-    const results = check({ pathPattern: path.join(__dirname, "xml/failure2.xml"), ignoreWarning: false })
+  test("when false", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/failure2.xml"), ignoreWarning: false })
 
     expect(results.isPassed).toBe(false)
     expect(results.failures.length).toEqual(1)
@@ -83,14 +83,12 @@ describe("ignoreWarning", () => {
   })
 })
 
-test("when the XML file can't be found", () => {
-  expect(() => {
-    check({ pathPattern: path.join(__dirname, "xml/unknown.xml") })
-  }).toThrow("No XML file found")
+test("when the XML file can't be found", async () => {
+  await expect(check({ pathPattern: path.join(__dirname, "xml/unknown.xml") }))
+    .rejects.toThrow("No XML file found")
 })
 
-test("when the contents of the XML file is invalid", () => {
-  expect(() => {
-    check({ pathPattern: path.join(__dirname, "xml/invalid.xml") })
-  }).toThrow("Unexpected structure XML file")
+test("when the contents of the XML file is invalid", async () => {
+  await expect(check({ pathPattern: path.join(__dirname, "xml/invalid.xml") }))
+    .rejects.toThrow("Unexpected structure XML file")
 })

@@ -8,7 +8,7 @@ async function run() {
     const ignoreWarning = core.getInput("ignore-warning").toString() === 'true'
     const baseDir = process.env.GITHUB_WORKSPACE
 
-    const results = check({ pathPattern, ignoreWarning })
+    const results = await check({ pathPattern, ignoreWarning })
 
     if (!results.isPassed) {
       await report({ results, core, baseDir })
