@@ -23,11 +23,11 @@ A GitHub Action to check and report the results of Android Lint in Job Summaries
 Indicates the relative path from the working directory to Android Lint result XML file.
 Path patterns by [@actions/glob](https://www.npmjs.com/package/@actions/glob) can also be specified.
 
-### (optional) ignore-warning
+### ignore-warning (optional)
 
 Indicates whether warnings should be ignored as build failures. Default is `false`.
 
-### (optional) follow-symbolic-links
+### follow-symbolic-links (optional)
 
 Indicates whether symbolic links are followed in searching XML files. Default is `true`.
 
