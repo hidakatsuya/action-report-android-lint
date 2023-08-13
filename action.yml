@@ -5,8 +5,11 @@ inputs:
     description: "Path or glob path pattern for Android Lint result XML file"
     required: true
   ignore-warning:
-    description: "Setting whether to ignore warnings"
+    description: "Indicates whether to ignore warnings"
     default: false
+  follow-symbolic-links:
+    description: "Indicates whether to follow symbolic links"
+    default: true
 runs:
   using: "node16"
   main: "dist/index.js"

@@ -9725,9 +9725,9 @@ const parse = (xmlData) => {
   return new Result(issues.map(i => new Issue(i)))
 }
 
-async function fetchXML(pathPattern) {
+async function fetchXML(pathPattern, followSymbolicLinks) {
   const pattern = Array.isArray(pathPattern) ? pathPattern.join("\n") : pathPattern
-  const globber = await glob.create(pattern)
+  const globber = await glob.create(pattern, { followSymbolicLinks })
   const paths = await globber.glob()
 
   return paths.map(path => {
@@ -9736,8 +9736,12 @@ async function fetchXML(pathPattern) {
   })
 }
 
-async function check({ pathPattern, ignoreWarning = false }) {
-  const xmls = await fetchXML(pathPattern)
+async function check({
+  pathPattern,
+  ignoreWarning = false,
+  followSymbolicLinks = true
+}) {
+  const xmls = await fetchXML(pathPattern, followSymbolicLinks)
 
   if (xmls.length === 0) {
     throw new Error(`No XML file found: ${pathPattern}`)
@@ -9819,13 +9823,19 @@ const core = __nccwpck_require__(2186)
 const { check } = __nccwpck_require__(8921)
 const report = __nccwpck_require__(7098)
 
+function isInputTrue(input) {
+  return input.toUpperCase() === "TRUE"
+}
+
 async function run() {
   try {
     const pathPattern = core.getInput("result-path")
-    const ignoreWarning = core.getInput("ignore-warning").toString() === 'true'
+    const ignoreWarning = isInputTrue(core.getInput("ignore-warning"))
+    const followSymbolicLinks = isInputTrue(core.getInput("follow-symbolic-links"))
+
     const baseDir = process.env.GITHUB_WORKSPACE
 
-    const results = await check({ pathPattern, ignoreWarning })
+    const results = await check({ pathPattern, ignoreWarning, followSymbolicLinks })
 
     if (!results.isPassed) {
       await report({ results, core, baseDir })

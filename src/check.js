@@ -137,9 +137,9 @@ const parse = (xmlData) => {
   return new Result(issues.map(i => new Issue(i)))
 }
 
-async function fetchXML(pathPattern) {
+async function fetchXML(pathPattern, followSymbolicLinks) {
   const pattern = Array.isArray(pathPattern) ? pathPattern.join("\n") : pathPattern
-  const globber = await glob.create(pattern)
+  const globber = await glob.create(pattern, { followSymbolicLinks })
   const paths = await globber.glob()
 
   return paths.map(path => {
@@ -148,8 +148,12 @@ async function fetchXML(pathPattern) {
   })
 }
 
-async function check({ pathPattern, ignoreWarning = false }) {
-  const xmls = await fetchXML(pathPattern)
+async function check({
+  pathPattern,
+  ignoreWarning = false,
+  followSymbolicLinks = true
+}) {
+  const xmls = await fetchXML(pathPattern, followSymbolicLinks)
 
   if (xmls.length === 0) {
     throw new Error(`No XML file found: ${pathPattern}`)
