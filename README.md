@@ -34,3 +34,9 @@ Indicates whether symbolic links are followed in searching XML files. Default is
 ## Versioning
 
 This action follows [the recommendations of GitHub Actions Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md).
+
+## Releasing
+
+1. Make sure CI for main branch has passed
+2. Create a new release to publish to the GitHub Marketplace
+3. Make sure that [the release workflow](https://github.com/hidakatsuya/action-report-android-lint/actions/workflows/release.yml) has passed
