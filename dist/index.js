@@ -9798,12 +9798,12 @@ async function report({ results, core, baseDir }) {
     core.summary.addHeading(path.relative(baseDir, xmlPath), 3)
 
     const errorDetails = buildDetails(errors, baseDir)
-    if (errorDetails) {
+    if (errorDetails !== null) {
       core.summary.addDetails("❌ Errors", errorDetails)
     }
 
     const warningDetails = buildDetails(warnings, baseDir)
-    if (warningDetails) {
+    if (warningDetails !== null) {
       core.summary.addDetails("⚠️ Warnings", warningDetails)
     }
   })
