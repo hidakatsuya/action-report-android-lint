@@ -13,10 +13,12 @@ A GitHub Action to check and report the results of Android Lint in Job Summaries
     run: ./gradlew lint
 
   - name: Check and report lint results
-    uses: hidakatsuya/action-report-android-lint@v1
+    uses: hidakatsuya/action-report-android-lint@v1.0.0
     with:
       result-path: 'app/build/reports/lint-results-debug.xml'
 ```
+
+Alternatively, you can specify a major version, such as `hidakatsuya/action-report-android-lint@v1`.
 
 ### result-path
 
