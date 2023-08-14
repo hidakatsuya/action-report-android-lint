@@ -9703,7 +9703,7 @@ class Results {
   }
 }
 
-const parse = (xmlData) => {
+function parse(xmlData) {
   const parser = new XMLParser({
     trimValues: false,
     ignoreAttributes: false,
