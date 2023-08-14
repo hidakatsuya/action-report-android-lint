@@ -9775,16 +9775,20 @@ function buildDetails(issuesEachFile, baseDir) {
   let summaries = []
 
   for (const [file, issues] of Object.entries(issuesEachFile)) {
-    summaries.push("\n")
-    summaries.push(`#### ${path.relative(baseDir, file)} (${issues.length} issues)`)
+    summaries.push(
+      "\n",
+      `#### ${path.relative(baseDir, file)} (${issues.length} issues)`
+    )
 
     issues.forEach(issue => {
-      summaries.push(`* **Line#${issue.lineNumber}** - ${issue.message}`)
-      summaries.push("  ```")
-      summaries.push(`  ${issue.errorLine1}`)
-      summaries.push(`  ${issue.errorLine2}`)
-      summaries.push("  ```")
-      summaries.push("")
+      summaries.push(
+        `* **Line#${issue.lineNumber}** - ${issue.message}`,
+        "  ```",
+        `  ${issue.errorLine1}`,
+        `  ${issue.errorLine2}`,
+        "  ```",
+        ""
+      )
     })
   }
 
