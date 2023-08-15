@@ -5,11 +5,13 @@ const process = require("process")
 
 function setupActionEnv(pathPattern) {
   process.env["INPUT_RESULT-PATH"] = pathPattern
+  process.env["INPUT_FOLLOW-SYMBOLIC-LINKS"] = true
   process.env["GITHUB_WORKSPACE"] ??= path.join(__dirname, '..')
+  setupFailOnWarning(true)
 }
 
-function setupIgnoreWarning(value) {
-  process.env["INPUT_IGNORE-WARNING"] = value
+function setupFailOnWarning(value) {
+  process.env["INPUT_FAIL-ON-WARNING"] = value
 }
 
 beforeEach(() => {
@@ -22,18 +24,29 @@ afterEach(() => {
   core.summary.write.mockReset()
 })
 
-test("when the result is success", async () => {
+test("when the results is success", async () => {
   setupActionEnv(path.join(__dirname, "xml/success*.xml"))
 
   await run()
 
-  expect(core.summary.write.mock.calls.length).toEqual(0)
+  expect(core.summary.write.mock.calls.length).toEqual(1)
 
   expect(core.setFailed.mock.calls.length).toEqual(0)
 })
 
-test("when the result is failure", async () => {
-  setupActionEnv(path.join(__dirname, "xml/failure*.xml"))
+test("when the results is error", async () => {
+  setupActionEnv(path.join(__dirname, "xml/failure1.xml"))
+
+  await run()
+
+  expect(core.summary.write.mock.calls.length).toEqual(1)
+
+  expect(core.setFailed.mock.calls.length).toEqual(1)
+  expect(core.setFailed.mock.lastCall[0]).toMatch("Android Lint issues found")
+})
+
+test("when the results is warning", async () => {
+  setupActionEnv(path.join(__dirname, "xml/failure2.xml"))
 
   await run()
 
@@ -54,23 +67,18 @@ test("when no XML file found", async () => {
   expect(core.setFailed.mock.lastCall[0]).toMatch("No XML file found")
 })
 
-describe("ignore-warning option", () => {
+describe("fail-on-warning option", () => {
   beforeEach(() => setupActionEnv(path.join(__dirname, "xml/failure2.xml")))
 
-  test("not set (false by default)", async () => {
+  test("true", async () => {
+    setupFailOnWarning("true")
     await run()
     expect(core.setFailed.mock.calls.length).toEqual(1)
-  })
-
-  test("true", async () => {
-    setupIgnoreWarning("true")
-    await run()
-    expect(core.setFailed.mock.calls.length).toEqual(0)
   })
 
   test("false", async () => {
-    setupIgnoreWarning("false")
+    setupFailOnWarning("false")
     await run()
-    expect(core.setFailed.mock.calls.length).toEqual(1)
+    expect(core.setFailed.mock.calls.length).toEqual(0)
   })
 })

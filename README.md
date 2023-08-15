@@ -25,9 +25,9 @@ Alternatively, you can specify a major version, such as `hidakatsuya/action-repo
 Indicates the relative path from the working directory to Android Lint result XML file.
 Path patterns by [@actions/glob](https://www.npmjs.com/package/@actions/glob) can also be specified.
 
-### ignore-warning (optional)
+### fail-on-warning (optional)
 
-Indicates whether warnings should be ignored as build failures. Default is `false`.
+Indicates whether the action should fail if there is a severity warning issue. Default is `true`.
 
 ### follow-symbolic-links (optional)
 
