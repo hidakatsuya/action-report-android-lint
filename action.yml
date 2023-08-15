@@ -8,9 +8,9 @@ inputs:
   result-path:
     description: "Path or glob path pattern for Android Lint result XML file"
     required: true
-  ignore-warning:
-    description: "Indicates whether to ignore warnings"
-    default: false
+  fail-on-warning:
+    description: "Indicates whether the action should fail if there is a severity warning issue"
+    default: true
   follow-symbolic-links:
     description: "Indicates whether to follow symbolic links"
     default: true

@@ -9653,15 +9653,17 @@ class Issue {
 }
 
 class Result {
+  #status = null
   #errors = null
   #warnings = null
 
   constructor(issues) {
     this.issues = issues
+    this.#initStatus()
   }
 
-  isPassed(ignoreWarning = false) {
-    return this.errors.length === 0 && (ignoreWarning || this.warnings.length === 0)
+  get status() {
+    return this.#status
   }
 
   get errors() {
@@ -9673,23 +9675,29 @@ class Result {
     this.#warnings ??= this.issues.filter(issue => issue.isWarning)
     return this.#warnings
   }
+
+  #initStatus() {
+    if (this.errors.length > 0) {
+      this.#status = "error"
+    } else if (this.warnings.length > 0) {
+      this.#status = "warning"
+    } else {
+      this.#status = "success"
+    }
+  }
 }
 
 class Results {
-  constructor(results, ignoreWarning = false) {
+  constructor(results) {
     this.results = results
-    this.failures = results.filter(({ result }) => {
-      return !result.isPassed(ignoreWarning)
-    })
-  }
-
-  get isPassed() {
-    return this.failures.length === 0
+    this.#initStatus()
+    this.#initFailures()
   }
 
   failuresEach(fn) {
     this.failures.forEach(({ path, result }) => {
       const { errors, warnings } = result
+
       fn({
         xmlPath: path,
         errors: this.#groupIssuesByFile(errors),
@@ -9700,6 +9708,24 @@ class Results {
 
   #groupIssuesByFile(issues) {
     return group(issues, ({ file }) => file)
+  }
+
+  #initStatus() {
+    const statsues = this.results.map(({ result }) => result.status)
+
+    if (statsues.includes("error")) {
+      this.status = "error"
+    } else if (statsues.includes("warning")) {
+      this.status = "warning"
+    } else {
+      this.status = "success"
+    }
+  }
+
+  #initFailures() {
+    this.failures = this.results.filter(({ result }) => {
+      return result.status !== "success"
+    })
   }
 }
 
@@ -9736,11 +9762,7 @@ async function fetchXML(pathPattern, followSymbolicLinks) {
   })
 }
 
-async function check({
-  pathPattern,
-  ignoreWarning = false,
-  followSymbolicLinks = true
-}) {
+async function check({ pathPattern, followSymbolicLinks = true }) {
   const xmls = await fetchXML(pathPattern, followSymbolicLinks)
 
   if (xmls.length === 0) {
@@ -9751,7 +9773,7 @@ async function check({
     return { path, result: parse(data) }
   })
 
-  return new Results(results, ignoreWarning)
+  return new Results(results)
 }
 
 module.exports = {
@@ -9795,23 +9817,39 @@ function buildDetails(issuesEachFile, baseDir) {
   return summaries.join("\n")
 }
 
+function resultIcon(resultStatus) {
+  switch (resultStatus) {
+    case "error":
+      return "❌"
+    case "warning":
+      return "⚠"
+    case "success":
+      return "✔"
+    default:
+      throw new Error(`Invalid result status: ${results.status}`)
+  }
+}
+
 async function report({ results, core, baseDir }) {
-  core.summary.addHeading("Android Lint", 2)
+  core.summary.addHeading(`${resultIcon(results.status)} Android Lint`, 2)
 
-  results.failuresEach(({ xmlPath, errors, warnings }) => {
-    core.summary.addHeading(path.relative(baseDir, xmlPath), 3)
+  if (results.failures.length === 0) {
+    core.summary.addRaw(core.summary.wrap("p", "No issue."))
+  } else {
+    results.failuresEach(({ xmlPath, errors, warnings }) => {
+      core.summary.addHeading(path.relative(baseDir, xmlPath), 3)
 
-    const errorDetails = buildDetails(errors, baseDir)
-    if (errorDetails !== null) {
-      core.summary.addDetails("❌ Errors", errorDetails)
-    }
+      const errorDetails = buildDetails(errors, baseDir)
+      if (errorDetails !== null) {
+        core.summary.addDetails("❌ Errors", errorDetails)
+      }
 
-    const warningDetails = buildDetails(warnings, baseDir)
-    if (warningDetails !== null) {
-      core.summary.addDetails("⚠️ Warnings", warningDetails)
-    }
-  })
-
+      const warningDetails = buildDetails(warnings, baseDir)
+      if (warningDetails !== null) {
+        core.summary.addDetails("⚠️ Warnings", warningDetails)
+      }
+    })
+  }
   await core.summary.write()
 }
 
@@ -9827,24 +9865,48 @@ const core = __nccwpck_require__(2186)
 const { check } = __nccwpck_require__(8921)
 const report = __nccwpck_require__(7098)
 
+function initEnv() {
+  const baseDir = process.env.GITHUB_WORKSPACE
+
+  const pathPattern = core.getInput("result-path")
+  const failOnWarning = isInputTrue(core.getInput("fail-on-warning"))
+  const followSymbolicLinks = isInputTrue(core.getInput("follow-symbolic-links"))
+
+  return { baseDir, pathPattern, failOnWarning, followSymbolicLinks }
+}
+
 function isInputTrue(input) {
   return input.toUpperCase() === "TRUE"
 }
 
+function setFailedOn(resultStatus, failOnWarning = true) {
+  let failure = true
+
+  if (resultStatus === "warning") {
+    failure = failOnWarning
+  } else {
+    failure = resultStatus !== "success"
+  }
+
+  if (failure) {
+    core.setFailed("Android Lint issues found. Please check Job Summaries.")
+  }
+}
+
 async function run() {
   try {
-    const pathPattern = core.getInput("result-path")
-    const ignoreWarning = isInputTrue(core.getInput("ignore-warning"))
-    const followSymbolicLinks = isInputTrue(core.getInput("follow-symbolic-links"))
+    const {
+      baseDir,
+      pathPattern,
+      failOnWarning,
+      followSymbolicLinks
+    } = initEnv()
 
-    const baseDir = process.env.GITHUB_WORKSPACE
+    const results = await check({ pathPattern, followSymbolicLinks })
 
-    const results = await check({ pathPattern, ignoreWarning, followSymbolicLinks })
+    await report({ results, core, baseDir })
 
-    if (!results.isPassed) {
-      await report({ results, core, baseDir })
-      core.setFailed("Android Lint issues found. Please check Job Summaries.")
-    }
+    setFailedOn(results.status, failOnWarning)
   } catch (error) {
     core.setFailed(error.message)
   }

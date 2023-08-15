@@ -65,15 +65,17 @@ class Issue {
 }
 
 class Result {
+  #status = null
   #errors = null
   #warnings = null
 
   constructor(issues) {
     this.issues = issues
+    this.#initStatus()
   }
 
-  isPassed(ignoreWarning = false) {
-    return this.errors.length === 0 && (ignoreWarning || this.warnings.length === 0)
+  get status() {
+    return this.#status
   }
 
   get errors() {
@@ -85,23 +87,29 @@ class Result {
     this.#warnings ??= this.issues.filter(issue => issue.isWarning)
     return this.#warnings
   }
+
+  #initStatus() {
+    if (this.errors.length > 0) {
+      this.#status = "error"
+    } else if (this.warnings.length > 0) {
+      this.#status = "warning"
+    } else {
+      this.#status = "success"
+    }
+  }
 }
 
 class Results {
-  constructor(results, ignoreWarning = false) {
+  constructor(results) {
     this.results = results
-    this.failures = results.filter(({ result }) => {
-      return !result.isPassed(ignoreWarning)
-    })
-  }
-
-  get isPassed() {
-    return this.failures.length === 0
+    this.#initStatus()
+    this.#initFailures()
   }
 
   failuresEach(fn) {
     this.failures.forEach(({ path, result }) => {
       const { errors, warnings } = result
+
       fn({
         xmlPath: path,
         errors: this.#groupIssuesByFile(errors),
@@ -112,6 +120,24 @@ class Results {
 
   #groupIssuesByFile(issues) {
     return group(issues, ({ file }) => file)
+  }
+
+  #initStatus() {
+    const statsues = this.results.map(({ result }) => result.status)
+
+    if (statsues.includes("error")) {
+      this.status = "error"
+    } else if (statsues.includes("warning")) {
+      this.status = "warning"
+    } else {
+      this.status = "success"
+    }
+  }
+
+  #initFailures() {
+    this.failures = this.results.filter(({ result }) => {
+      return result.status !== "success"
+    })
   }
 }
 
@@ -148,11 +174,7 @@ async function fetchXML(pathPattern, followSymbolicLinks) {
   })
 }
 
-async function check({
-  pathPattern,
-  ignoreWarning = false,
-  followSymbolicLinks = true
-}) {
+async function check({ pathPattern, followSymbolicLinks = true }) {
   const xmls = await fetchXML(pathPattern, followSymbolicLinks)
 
   if (xmls.length === 0) {
@@ -163,7 +185,7 @@ async function check({
     return { path, result: parse(data) }
   })
 
-  return new Results(results, ignoreWarning)
+  return new Results(results)
 }
 
 module.exports = {

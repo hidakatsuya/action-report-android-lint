@@ -2,10 +2,10 @@ const { check } = require("../src/check")
 const path = require("path")
 
 describe("single XML file", () => {
-  test("when the result is success", async () => {
+  test("when the results is success", async () => {
     const results = await check({ pathPattern: path.join(__dirname, "xml/success1.xml") })
 
-    expect(results.isPassed).toBe(true)
+    expect(results.status).toEqual("success")
     expect(results.failures.length).toEqual(0)
     expect(results.results.length).toEqual(1)
 
@@ -16,15 +16,16 @@ describe("single XML file", () => {
     expect(result.warnings.length).toEqual(0)
   })
 
-  test("when the result is failure", async () => {
+  test("when the results is error including warning", async () => {
     const results = await check({ pathPattern: path.join(__dirname, "xml/failure1.xml") })
 
-    expect(results.isPassed).toBe(false)
+    expect(results.status).toEqual("error")
     expect(results.failures.length).toEqual(1)
     expect(results.results.length).toEqual(1)
 
     const { result } = results.results[0]
 
+    expect(result.status).toEqual("error")
     expect(result.issues.length).toEqual(2)
 
     expect(result.warnings.length).toEqual(1)
@@ -33,13 +34,31 @@ describe("single XML file", () => {
     expect(result.errors.length).toEqual(1)
     expect(result.errors[0].message).toMatch("The resource `R.color.purple_500` appears to be unused")
   })
+
+  test("when the results is warning only", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/failure2.xml") })
+
+    expect(results.status).toEqual("warning")
+    expect(results.failures.length).toEqual(1)
+    expect(results.results.length).toEqual(1)
+
+    const { result } = results.results[0]
+
+    expect(result.status).toEqual("warning")
+    expect(result.issues.length).toEqual(1)
+
+    expect(result.warnings.length).toEqual(1)
+    expect(result.warnings[0].message).toMatch("The resource `R.color.purple_700` appears to be unused")
+
+    expect(result.errors.length).toEqual(0)
+  })
 })
 
 describe("multiple XML files", () => {
   test("when the all results are success", async () => {
     const results = await check({ pathPattern: path.join(__dirname, "xml/success*.xml") })
 
-    expect(results.isPassed).toBe(true)
+    expect(results.status).toEqual("success")
     expect(results.failures.length).toEqual(0)
     expect(results.results.length).toEqual(2)
   })
@@ -47,7 +66,7 @@ describe("multiple XML files", () => {
   test("when the all results are failure", async () => {
     const results = await check({ pathPattern: path.join(__dirname, "xml/failure*.xml") })
 
-    expect(results.isPassed).toBe(false)
+    expect(results.status).toEqual("error")
     expect(results.failures.length).toEqual(2)
     expect(results.results.length).toEqual(2)
   })
@@ -59,27 +78,9 @@ describe("multiple XML files", () => {
     ]
     const results = await check({ pathPattern })
 
-    expect(results.isPassed).toBe(false)
+    expect(results.status).toEqual("error")
     expect(results.failures.length).toEqual(1)
     expect(results.results.length).toEqual(2)
-  })
-})
-
-describe("ignoreWarning", () => {
-  test("when true", async () => {
-    const results = await check({ pathPattern: path.join(__dirname, "xml/failure2.xml"), ignoreWarning: true })
-
-    expect(results.isPassed).toBe(true)
-    expect(results.failures.length).toEqual(0)
-    expect(results.results.length).toEqual(1)
-  })
-
-  test("when false", async () => {
-    const results = await check({ pathPattern: path.join(__dirname, "xml/failure2.xml"), ignoreWarning: false })
-
-    expect(results.isPassed).toBe(false)
-    expect(results.failures.length).toEqual(1)
-    expect(results.results.length).toEqual(1)
   })
 })
 
@@ -97,7 +98,7 @@ describe("basic glob path pattern", () => {
   test("**/xml/failure*.xml", async () => {
     const results = await check({ pathPattern: "**/xml/failure*.xml" })
 
-    expect(results.isPassed).toBe(false)
+    expect(results.status).toEqual("error")
     expect(results.failures.length).toEqual(2)
     expect(results.results.length).toEqual(2)
   })

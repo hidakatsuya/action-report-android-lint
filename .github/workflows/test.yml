@@ -12,7 +12,7 @@ jobs:
     - run: npm test
 
   # test action works running from the graph
-  test:
+  action-test-success:
     runs-on: ubuntu-latest
 
     env:
@@ -23,13 +23,23 @@ jobs:
     - uses: ./
       with:
         result-path: "__tests__/xml/success*.xml"
-        ignore-warning: false
+
+  action-test-success-with-warnings:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
     - uses: ./
       with:
         result-path: "__tests__/xml/failure2.xml"
-        ignore-warning: true
+        fail-on-warning: false
+
+  action-test-error:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
     - uses: ./
-      if: env.RUN_FAILURE_TEST == 'true'
       with:
         result-path: "__tests__/xml/failure*.xml"
-        ignore-warning: false
+      continue-on-error: true
