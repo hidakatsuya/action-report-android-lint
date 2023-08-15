@@ -1,7 +1,7 @@
 {
   "name": "action-report-android-lint",
-  "version": "1.0.0",
-  "description": "Check and report Android lint results",
+  "version": "1.1.0",
+  "description": "A GitHub Action to check and report the results of Android Lint in Job Summaries",
   "main": "src/index.js",
   "scripts": {
     "prepare": "ncc build src/index.js -o dist --source-map --license licenses.txt",
