@@ -15,7 +15,7 @@ See also [Job Summaries for unit-test workflow results](https://github.com/hidak
     run: ./gradlew lint
 
   - name: Check and report lint results
-    uses: hidakatsuya/action-report-android-lint@v1.1.0
+    uses: hidakatsuya/action-report-android-lint@v1.1.1
     with:
       result-path: 'app/build/reports/lint-results-debug.xml'
 ```
