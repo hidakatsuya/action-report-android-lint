@@ -40,7 +40,7 @@ describe("single result", () => {
     const summary = core.summary.stringify()
 
     expect(summary).toMatch([
-      "<h2>✔ Android Lint</h2>",
+      "<h2>✅ Android Lint</h2>",
       "<p>No issue.</p>"
     ].join("\n"))
 
@@ -85,7 +85,7 @@ describe("single result", () => {
     const summary = core.summary.stringify()
 
     expect(summary).toMatch([
-      "<h2>⚠ Android Lint</h2>",
+      "<h2>⚠️ Android Lint</h2>",
       "<h3>app/build/result.xml</h3>",
       "<details><summary>⚠️ Warnings</summary>",
       "",
