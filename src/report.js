@@ -31,9 +31,9 @@ function resultIcon(resultStatus) {
     case "error":
       return "❌"
     case "warning":
-      return "⚠"
+      return "⚠️"
     case "success":
-      return "✔"
+      return "✅"
     default:
       throw new Error(`Invalid result status: ${results.status}`)
   }
