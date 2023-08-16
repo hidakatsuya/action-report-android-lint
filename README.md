@@ -6,6 +6,8 @@ A GitHub Action to check and report the results of Android Lint in Job Summaries
 
 ![build summary](./doc/sample-build-summary.png)
 
+See also [Job Summaries for unit-test workflow results](https://github.com/hidakatsuya/action-report-android-lint/actions/workflows/test.yml).
+
 ## Usage
 
 ```yaml
