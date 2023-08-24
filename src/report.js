@@ -13,7 +13,7 @@ function buildDetails(issuesEachFile, baseDir) {
 
     issues.forEach(issue => {
       summaries.push(
-        `* **Line#${issue.lineNumber}** - ${issue.message}`,
+        `* **Line#${issue.lineNumber}** - ${issue.id}: ${issue.message}`,
         "  ```",
         `  ${issue.errorLine1}`,
         `  ${issue.errorLine2}`,

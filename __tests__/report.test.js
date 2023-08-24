@@ -6,16 +6,14 @@ const baseDir = "/path/to"
 
 function buildIssue({ severity, identifier = 1 }) {
   return new Issue({
-    location: {
-      "@_file": `/path/to/app/src/source${identifier}.kt`,
-      "@_line": `${identifier}`,
-    },
-    "@_id": "SomeError",
-    "@_severity": severity,
-    "@_message": `Error message${identifier}`,
-    "@_summary": "Some Error",
-    "@_errorLine1": "line1",
-    "@_errorLine2": "line2"
+    id: "SomeError",
+    file: `/path/to/app/src/source${identifier}.kt`,
+    lineNumber: `${identifier}`,
+    severity: severity,
+    message: `Error message${identifier}`,
+    summary: "Some Error",
+    errorLine1: "line1",
+    errorLine2: "line2"
   })
 }
 
