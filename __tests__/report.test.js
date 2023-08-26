@@ -4,16 +4,22 @@ const { Issue, Result, Results } = require("../src/check")
 
 const baseDir = "/path/to"
 
-function buildIssue({ severity, identifier = 1 }) {
+function buildIssue({
+  severity,
+  identifier = 1,
+  lineNumber = identifier.toString(),
+  errorLine1 = "line1",
+  errorLine2 = "line2"
+}) {
   return new Issue({
     id: "SomeError",
     file: `/path/to/app/src/source${identifier}.kt`,
-    lineNumber: `${identifier}`,
+    lineNumber,
     severity: severity,
     message: `Error message${identifier}`,
     summary: "Some Error",
-    errorLine1: "line1",
-    errorLine2: "line2"
+    errorLine1,
+    errorLine2
   })
 }
 
@@ -153,4 +159,31 @@ test("multiple results", async () => {
     "  ```",
     "</details>"
   ].join("\n"))
+})
+
+describe("other cases", () => {
+  test("no lineNumber and errorLine attribute", async () => {
+    const issue = buildIssue({
+      severity: "Error",
+      identifier: 1,
+      lineNumber: null,
+      errorLine1: null,
+      errorLine2: null
+    })
+    const result = new Result([issue])
+    const results = new Results([{ path: "/path/to/app/build/result.xml", result }])
+
+    await report({ results, core, baseDir })
+
+    const summary = core.summary.stringify()
+
+    expect(summary).toMatch([
+      "<h2>❌ Android Lint</h2>",
+      "<h3>app/build/result.xml</h3>",
+      "<details><summary>❌ Errors</summary>",
+      "",
+      "#### app/src/source1.kt (1 issues)",
+      "* SomeError: Error message1"
+    ].join("\n"))
+  })
 })
