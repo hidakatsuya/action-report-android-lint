@@ -100,23 +100,48 @@ describe("invalid XML file", () => {
   })
 })
 
-test("XML file containing issues with multiple locations", async () => {
-  const results = await check({ pathPattern: path.join(__dirname, "xml/failure3.xml") })
+describe("other XML file formats", () => {
+  test("<issue> with multiple location attributes", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/failure3.xml") })
 
-  expect(results.status).toEqual("warning")
-  expect(results.failures.length).toEqual(1)
-  expect(results.results.length).toEqual(1)
+    expect(results.status).toEqual("warning")
+    expect(results.failures.length).toEqual(1)
+    expect(results.results.length).toEqual(1)
 
-  const { result } = results.results[0]
+    const { result } = results.results[0]
 
-  expect(result.status).toEqual("warning")
-  expect(result.issues.length).toEqual(2)
+    expect(result.status).toEqual("warning")
+    expect(result.issues.length).toEqual(2)
 
-  expect(result.warnings.length).toEqual(2)
-  expect(result.warnings[0].file).toEqual("/path/to/root/app/src/main/res/values/colors1.xml")
-  expect(result.warnings[1].file).toEqual("/path/to/root/app/src/main/res/values/colors2.xml")
+    expect(result.warnings.length).toEqual(2)
+    expect(result.warnings[0].file).toEqual("/path/to/root/app/src/main/res/values/colors1.xml")
+    expect(result.warnings[1].file).toEqual("/path/to/root/app/src/main/res/values/colors2.xml")
 
-  expect(result.errors.length).toEqual(0)
+    expect(result.errors.length).toEqual(0)
+  })
+
+  test("No errorLine and lineNumber attributes", async () => {
+    const results = await check({ pathPattern: path.join(__dirname, "xml/failure4.xml") })
+
+    expect(results.status).toEqual("warning")
+    expect(results.failures.length).toEqual(1)
+    expect(results.results.length).toEqual(1)
+
+    const { result } = results.results[0]
+
+    expect(result.status).toEqual("warning")
+    expect(result.issues.length).toEqual(1)
+
+    expect(result.warnings.length).toEqual(1)
+    expect(result.errors.length).toEqual(0)
+
+    const issue = result.issues[0]
+
+    expect(issue.id).toEqual("UnusedResources")
+    expect(issue.errorLine1).toBeUndefined()
+    expect(issue.errorLine2).toBeUndefined()
+    expect(issue.lineNumber).toBeUndefined()
+  })
 })
 
 describe("basic glob path pattern", () => {
@@ -124,7 +149,7 @@ describe("basic glob path pattern", () => {
     const results = await check({ pathPattern: "**/xml/failure*.xml" })
 
     expect(results.status).toEqual("error")
-    expect(results.failures.length).toEqual(3)
-    expect(results.results.length).toEqual(3)
+    expect(results.failures.length).toEqual(4)
+    expect(results.results.length).toEqual(4)
   })
 })

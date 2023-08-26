@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- contains only warning issues  -->
 <issues format="6" by="lint 8.1.0">
 
     <issue

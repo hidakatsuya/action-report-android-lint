@@ -12,18 +12,33 @@ function buildDetails(issuesEachFile, baseDir) {
     )
 
     issues.forEach(issue => {
-      summaries.push(
-        `* **Line#${issue.lineNumber}** - ${issue.id}: ${issue.message}`,
-        "  ```",
-        `  ${issue.errorLine1}`,
-        `  ${issue.errorLine2}`,
-        "  ```",
-        ""
-      )
+      summaries.push(buildIssueDetail(issue))
     })
   }
 
   return summaries.join("\n")
+}
+
+function buildIssueDetail(issue) {
+  const detail = []
+
+  if (issue.lineNumber) {
+    detail.push(`* **Line#${issue.lineNumber}** - ${issue.id}: ${issue.message}`)
+  } else {
+    detail.push(`* ${issue.id}: ${issue.message}`)
+  }
+
+  if (issue.errorLine1 && issue.errorLine2) {
+    detail.push(
+      "  ```",
+      `  ${issue.errorLine1}`,
+      `  ${issue.errorLine2}`,
+      "  ```"
+    )
+  }
+  detail.push("")
+
+  return detail.join("\n")
 }
 
 function resultIcon(resultStatus) {
