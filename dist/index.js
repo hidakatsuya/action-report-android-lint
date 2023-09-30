@@ -558,7 +558,7 @@ class OidcClient {
                 .catch(error => {
                 throw new Error(`Failed to get ID Token. \n 
         Error Code : ${error.statusCode}\n 
-        Error Message: ${error.result.message}`);
+        Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
             if (!id_token) {
@@ -4290,6 +4290,7 @@ Builder.prototype.j2x = function(jObj, level) {
   let attrStr = '';
   let val = '';
   for (let key in jObj) {
+    if(!jObj.hasOwnProperty(key)) continue;
     if (typeof jObj[key] === 'undefined') {
       // supress undefined node only if it is not an attribute
       if (this.isAttribute(key)) {
@@ -4508,6 +4509,8 @@ function arrToStr(arr, options, jPath, indentation) {
     for (let i = 0; i < arr.length; i++) {
         const tagObj = arr[i];
         const tagName = propName(tagObj);
+        if(tagName === undefined) continue;
+
         let newJPath = "";
         if (jPath.length === 0) newJPath = tagName
         else newJPath = `${jPath}.${tagName}`;
@@ -4577,6 +4580,7 @@ function propName(obj) {
     const keys = Object.keys(obj);
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
+        if(!obj.hasOwnProperty(key)) continue;
         if (key !== ":@") return key;
     }
 }
@@ -4585,6 +4589,7 @@ function attr_to_str(attrMap, options) {
     let attrStr = "";
     if (attrMap && !options.ignoreAttributes) {
         for (let attr in attrMap) {
+            if(!attrMap.hasOwnProperty(attr)) continue;
             let attrVal = options.attributeValueProcessor(attr, attrMap[attr]);
             attrVal = replaceEntitiesValue(attrVal, options);
             if (attrVal === true && options.suppressBooleanAttributes) {
@@ -5119,6 +5124,7 @@ const parseXml = function(xmlData) {
       }else {//Opening tag
         let result = readTagExp(xmlData,i, this.options.removeNSPrefix);
         let tagName= result.tagName;
+        const rawTagName = result.rawTagName;
         let tagExp = result.tagExp;
         let attrExpPresent = result.attrExpPresent;
         let closeIndex = result.closeIndex;
@@ -5144,7 +5150,7 @@ const parseXml = function(xmlData) {
         if(tagName !== xmlObj.tagname){
           jPath += jPath ? "." + tagName : tagName;
         }
-        if (this.isItStopNode(this.options.stopNodes, jPath, tagName)) { //TODO: namespace
+        if (this.isItStopNode(this.options.stopNodes, jPath, tagName)) {
           let tagContent = "";
           //self-closing tag
           if(tagExp.length > 0 && tagExp.lastIndexOf("/") === tagExp.length - 1){
@@ -5157,8 +5163,8 @@ const parseXml = function(xmlData) {
           //normal tag
           else{
             //read until closing tag is found
-            const result = this.readStopNodeData(xmlData, tagName, closeIndex + 1);
-            if(!result) throw new Error(`Unexpected end of ${tagName}`);
+            const result = this.readStopNodeData(xmlData, rawTagName, closeIndex + 1);
+            if(!result) throw new Error(`Unexpected end of ${rawTagName}`);
             i = result.i;
             tagContent = result.tagContent;
           }
@@ -5343,6 +5349,7 @@ function readTagExp(xmlData,i, removeNSPrefix, closingChar = ">"){
     tagExp = tagExp.substr(separatorIndex + 1);
   }
 
+  const rawTagName = tagName;
   if(removeNSPrefix){
     const colonIndex = tagName.indexOf(":");
     if(colonIndex !== -1){
@@ -5356,6 +5363,7 @@ function readTagExp(xmlData,i, removeNSPrefix, closingChar = ">"){
     tagExp: tagExp,
     closeIndex: closeIndex,
     attrExpPresent: attrExpPresent,
+    rawTagName: rawTagName,
   }
 }
 /**
