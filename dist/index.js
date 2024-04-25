@@ -2954,63 +2954,26 @@ exports.checkBypass = checkBypass;
 
 /***/ }),
 
-/***/ 2386:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var callBound = __nccwpck_require__(8803);
-var GetIntrinsic = __nccwpck_require__(4538);
-var SameValue = __nccwpck_require__(4178);
-
-var $TypeError = GetIntrinsic('%TypeError%'); // eslint-disable-line new-cap
-
-var $filter = callBound('Array.prototype.filter');
-var $push = callBound('Array.prototype.push');
-
-module.exports = function AddValueToKeyedGroup(groups, key, value) {
-	var found = $filter(groups, function (group) {
-		return SameValue(group.Key, key); // eslint-disable-line new-cap
-	});
-	if (found.length > 0) {
-		var g = found[0];
-		if (found.length !== 1) {
-			throw new $TypeError('Assertion failed: more than 1 Record inside `groups` has a `[[Key]]` that is SameValue to `key`');
-		}
-		$push(g.Elements, value);
-	} else {
-		var group = { Key: key, Elements: [value] }; // eslint-disable-line sort-keys
-		$push(groups, group);
-	}
-};
-
-
-/***/ }),
-
 /***/ 7486:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
+var AddValueToKeyedGroup = __nccwpck_require__(6266);
+var Call = __nccwpck_require__(6534);
+var CreateDataPropertyOrThrow = __nccwpck_require__(7773);
+var Get = __nccwpck_require__(9617);
+var IsCallable = __nccwpck_require__(2800);
+var LengthOfArrayLike = __nccwpck_require__(7857);
+var OrdinaryObjectCreate = __nccwpck_require__(7803);
+var ToObject = __nccwpck_require__(5127);
+var ToPropertyKey = __nccwpck_require__(5417);
+var ToString = __nccwpck_require__(3144);
 
-var Call = __nccwpck_require__(1656);
-var CreateDataPropertyOrThrow = __nccwpck_require__(9641);
-var Get = __nccwpck_require__(4217);
-var IsCallable = __nccwpck_require__(1192);
-var LengthOfArrayLike = __nccwpck_require__(7219);
-var OrdinaryObjectCreate = __nccwpck_require__(1102);
-var ToObject = __nccwpck_require__(923);
-var ToPropertyKey = __nccwpck_require__(7542);
-var ToString = __nccwpck_require__(8780);
-
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 
 var forEach = __nccwpck_require__(8406);
-
-var AddValueToKeyedGroup = __nccwpck_require__(2386); // TODO: replace with es-abstract 2022 implementation
 
 module.exports = function group(callbackfn) {
 	var O = ToObject(this); // step 1
@@ -3038,7 +3001,7 @@ module.exports = function group(callbackfn) {
 	var obj = OrdinaryObjectCreate(null); // step 7
 	forEach(groups, function (g) { // step 8
 		// var elements = CreateArrayFromList(g.Elements);
-		CreateDataPropertyOrThrow(obj, g.Key, g.Elements);
+		CreateDataPropertyOrThrow(obj, g['[[Key]]'], g['[[Elements]]']);
 	});
 
 	return obj; // step 9
@@ -3423,38 +3386,26 @@ module.exports = function callBoundIntrinsic(name, allowMissing) {
 
 var bind = __nccwpck_require__(8334);
 var GetIntrinsic = __nccwpck_require__(4538);
+var setFunctionLength = __nccwpck_require__(4056);
 
+var $TypeError = __nccwpck_require__(6361);
 var $apply = GetIntrinsic('%Function.prototype.apply%');
 var $call = GetIntrinsic('%Function.prototype.call%');
 var $reflectApply = GetIntrinsic('%Reflect.apply%', true) || bind.call($call, $apply);
 
-var $gOPD = GetIntrinsic('%Object.getOwnPropertyDescriptor%', true);
-var $defineProperty = GetIntrinsic('%Object.defineProperty%', true);
+var $defineProperty = __nccwpck_require__(6123);
 var $max = GetIntrinsic('%Math.max%');
 
-if ($defineProperty) {
-	try {
-		$defineProperty({}, 'a', { value: 1 });
-	} catch (e) {
-		// IE 8 has a broken defineProperty
-		$defineProperty = null;
-	}
-}
-
 module.exports = function callBind(originalFunction) {
-	var func = $reflectApply(bind, $call, arguments);
-	if ($gOPD && $defineProperty) {
-		var desc = $gOPD(func, 'length');
-		if (desc.configurable) {
-			// original length, plus the receiver, minus any additional arguments (after the receiver)
-			$defineProperty(
-				func,
-				'length',
-				{ value: 1 + $max(0, originalFunction.length - (arguments.length - 1)) }
-			);
-		}
+	if (typeof originalFunction !== 'function') {
+		throw new $TypeError('a function is required');
 	}
-	return func;
+	var func = $reflectApply(bind, $call, arguments);
+	return setFunctionLength(
+		func,
+		1 + $max(0, originalFunction.length - (arguments.length - 1)),
+		true
+	);
 };
 
 var applyBind = function applyBind() {
@@ -3490,6 +3441,70 @@ var isArray = Array.isArray || function (xs) {
 
 /***/ }),
 
+/***/ 4564:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var $defineProperty = __nccwpck_require__(6123);
+
+var $SyntaxError = __nccwpck_require__(5474);
+var $TypeError = __nccwpck_require__(6361);
+
+var gopd = __nccwpck_require__(8501);
+
+/** @type {import('.')} */
+module.exports = function defineDataProperty(
+	obj,
+	property,
+	value
+) {
+	if (!obj || (typeof obj !== 'object' && typeof obj !== 'function')) {
+		throw new $TypeError('`obj` must be an object or a function`');
+	}
+	if (typeof property !== 'string' && typeof property !== 'symbol') {
+		throw new $TypeError('`property` must be a string or a symbol`');
+	}
+	if (arguments.length > 3 && typeof arguments[3] !== 'boolean' && arguments[3] !== null) {
+		throw new $TypeError('`nonEnumerable`, if provided, must be a boolean or null');
+	}
+	if (arguments.length > 4 && typeof arguments[4] !== 'boolean' && arguments[4] !== null) {
+		throw new $TypeError('`nonWritable`, if provided, must be a boolean or null');
+	}
+	if (arguments.length > 5 && typeof arguments[5] !== 'boolean' && arguments[5] !== null) {
+		throw new $TypeError('`nonConfigurable`, if provided, must be a boolean or null');
+	}
+	if (arguments.length > 6 && typeof arguments[6] !== 'boolean') {
+		throw new $TypeError('`loose`, if provided, must be a boolean');
+	}
+
+	var nonEnumerable = arguments.length > 3 ? arguments[3] : null;
+	var nonWritable = arguments.length > 4 ? arguments[4] : null;
+	var nonConfigurable = arguments.length > 5 ? arguments[5] : null;
+	var loose = arguments.length > 6 ? arguments[6] : false;
+
+	/* @type {false | TypedPropertyDescriptor<unknown>} */
+	var desc = !!gopd && gopd(obj, property);
+
+	if ($defineProperty) {
+		$defineProperty(obj, property, {
+			configurable: nonConfigurable === null && desc ? desc.configurable : !nonConfigurable,
+			enumerable: nonEnumerable === null && desc ? desc.enumerable : !nonEnumerable,
+			value: value,
+			writable: nonWritable === null && desc ? desc.writable : !nonWritable
+		});
+	} else if (loose || (!nonEnumerable && !nonWritable && !nonConfigurable)) {
+		// must fall back to [[Set]], and was not explicitly asked to make non-enumerable, non-writable, or non-configurable
+		obj[property] = value; // eslint-disable-line no-param-reassign
+	} else {
+		throw new $SyntaxError('This environment does not support defining a property as non-configurable, non-writable, or non-enumerable.');
+	}
+};
+
+
+/***/ }),
+
 /***/ 9234:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -3501,15 +3516,13 @@ var hasSymbols = typeof Symbol === 'function' && typeof Symbol('foo') === 'symbo
 
 var toStr = Object.prototype.toString;
 var concat = Array.prototype.concat;
-var origDefineProperty = Object.defineProperty;
+var defineDataProperty = __nccwpck_require__(4564);
 
 var isFunction = function (fn) {
 	return typeof fn === 'function' && toStr.call(fn) === '[object Function]';
 };
 
-var hasPropertyDescriptors = __nccwpck_require__(176)();
-
-var supportsDescriptors = origDefineProperty && hasPropertyDescriptors;
+var supportsDescriptors = __nccwpck_require__(176)();
 
 var defineProperty = function (object, name, value, predicate) {
 	if (name in object) {
@@ -3521,15 +3534,11 @@ var defineProperty = function (object, name, value, predicate) {
 			return;
 		}
 	}
+
 	if (supportsDescriptors) {
-		origDefineProperty(object, name, {
-			configurable: true,
-			enumerable: false,
-			value: value,
-			writable: true
-		});
+		defineDataProperty(object, name, value, true);
 	} else {
-		object[name] = value; // eslint-disable-line no-param-reassign
+		defineDataProperty(object, name, value);
 	}
 };
 
@@ -3551,13 +3560,170 @@ module.exports = defineProperties;
 
 /***/ }),
 
+/***/ 6123:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var GetIntrinsic = __nccwpck_require__(4538);
+
+/** @type {import('.')} */
+var $defineProperty = GetIntrinsic('%Object.defineProperty%', true) || false;
+if ($defineProperty) {
+	try {
+		$defineProperty({}, 'a', { value: 1 });
+	} catch (e) {
+		// IE 8 has a broken defineProperty
+		$defineProperty = false;
+	}
+}
+
+module.exports = $defineProperty;
+
+
+/***/ }),
+
+/***/ 1933:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./eval')} */
+module.exports = EvalError;
+
+
+/***/ }),
+
+/***/ 8015:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('.')} */
+module.exports = Error;
+
+
+/***/ }),
+
+/***/ 4415:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./range')} */
+module.exports = RangeError;
+
+
+/***/ }),
+
+/***/ 6279:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./ref')} */
+module.exports = ReferenceError;
+
+
+/***/ }),
+
+/***/ 5474:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./syntax')} */
+module.exports = SyntaxError;
+
+
+/***/ }),
+
+/***/ 6361:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./type')} */
+module.exports = TypeError;
+
+
+/***/ }),
+
+/***/ 5065:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('./uri')} */
+module.exports = URIError;
+
+
+/***/ }),
+
+/***/ 2177:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var $TypeError = __nccwpck_require__(6361);
+
+/** @type {import('./RequireObjectCoercible')} */
+module.exports = function RequireObjectCoercible(value) {
+	if (value == null) {
+		throw new $TypeError((arguments.length > 0 && arguments[1]) || ('Cannot call method on ' + value));
+	}
+	return value;
+};
+
+
+/***/ }),
+
+/***/ 5127:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var $Object = __nccwpck_require__(8308);
+var RequireObjectCoercible = __nccwpck_require__(2177);
+
+/** @type {import('./ToObject')} */
+module.exports = function ToObject(value) {
+	RequireObjectCoercible(value);
+	return $Object(value);
+};
+
+
+/***/ }),
+
+/***/ 8308:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {import('.')} */
+module.exports = Object;
+
+
+/***/ }),
+
 /***/ 4616:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var has = __nccwpck_require__(6339);
+var hasOwn = __nccwpck_require__(2157);
 
 var hasUnscopables = typeof Symbol === 'function' && typeof Symbol.unscopables === 'symbol';
 
@@ -3569,7 +3735,7 @@ module.exports = function shimUnscopables(method) {
 	if (typeof method !== 'string' || !method) {
 		throw new $TypeError('method must be a non-empty string');
 	}
-	if (!has(Array.prototype, method)) {
+	if (!hasOwn(Array.prototype, method)) {
 		throw new $TypeError('method must be on Array.prototype');
 	}
 	if (hasUnscopables) {
@@ -5665,43 +5831,75 @@ module.exports = XmlNode;
 /* eslint no-invalid-this: 1 */
 
 var ERROR_MESSAGE = 'Function.prototype.bind called on incompatible ';
-var slice = Array.prototype.slice;
 var toStr = Object.prototype.toString;
+var max = Math.max;
 var funcType = '[object Function]';
+
+var concatty = function concatty(a, b) {
+    var arr = [];
+
+    for (var i = 0; i < a.length; i += 1) {
+        arr[i] = a[i];
+    }
+    for (var j = 0; j < b.length; j += 1) {
+        arr[j + a.length] = b[j];
+    }
+
+    return arr;
+};
+
+var slicy = function slicy(arrLike, offset) {
+    var arr = [];
+    for (var i = offset || 0, j = 0; i < arrLike.length; i += 1, j += 1) {
+        arr[j] = arrLike[i];
+    }
+    return arr;
+};
+
+var joiny = function (arr, joiner) {
+    var str = '';
+    for (var i = 0; i < arr.length; i += 1) {
+        str += arr[i];
+        if (i + 1 < arr.length) {
+            str += joiner;
+        }
+    }
+    return str;
+};
 
 module.exports = function bind(that) {
     var target = this;
-    if (typeof target !== 'function' || toStr.call(target) !== funcType) {
+    if (typeof target !== 'function' || toStr.apply(target) !== funcType) {
         throw new TypeError(ERROR_MESSAGE + target);
     }
-    var args = slice.call(arguments, 1);
+    var args = slicy(arguments, 1);
 
     var bound;
     var binder = function () {
         if (this instanceof bound) {
             var result = target.apply(
                 this,
-                args.concat(slice.call(arguments))
+                concatty(args, arguments)
             );
             if (Object(result) === result) {
                 return result;
             }
             return this;
-        } else {
-            return target.apply(
-                that,
-                args.concat(slice.call(arguments))
-            );
         }
+        return target.apply(
+            that,
+            concatty(args, arguments)
+        );
+
     };
 
-    var boundLength = Math.max(0, target.length - args.length);
+    var boundLength = max(0, target.length - args.length);
     var boundArgs = [];
     for (var i = 0; i < boundLength; i++) {
-        boundArgs.push('$' + i);
+        boundArgs[i] = '$' + i;
     }
 
-    bound = Function('binder', 'return function (' + boundArgs.join(',') + '){ return binder.apply(this,arguments); }')(binder);
+    bound = Function('binder', 'return function (' + joiny(boundArgs, ',') + '){ return binder.apply(this,arguments); }')(binder);
 
     if (target.prototype) {
         var Empty = function Empty() {};
@@ -5737,9 +5935,15 @@ module.exports = Function.prototype.bind || implementation;
 
 var undefined;
 
-var $SyntaxError = SyntaxError;
+var $Error = __nccwpck_require__(8015);
+var $EvalError = __nccwpck_require__(1933);
+var $RangeError = __nccwpck_require__(4415);
+var $ReferenceError = __nccwpck_require__(6279);
+var $SyntaxError = __nccwpck_require__(5474);
+var $TypeError = __nccwpck_require__(6361);
+var $URIError = __nccwpck_require__(5065);
+
 var $Function = Function;
-var $TypeError = TypeError;
 
 // eslint-disable-next-line consistent-return
 var getEvalledConstructor = function (expressionSyntax) {
@@ -5791,6 +5995,7 @@ var needsEval = {};
 var TypedArray = typeof Uint8Array === 'undefined' || !getProto ? undefined : getProto(Uint8Array);
 
 var INTRINSICS = {
+	__proto__: null,
 	'%AggregateError%': typeof AggregateError === 'undefined' ? undefined : AggregateError,
 	'%Array%': Array,
 	'%ArrayBuffer%': typeof ArrayBuffer === 'undefined' ? undefined : ArrayBuffer,
@@ -5811,9 +6016,9 @@ var INTRINSICS = {
 	'%decodeURIComponent%': decodeURIComponent,
 	'%encodeURI%': encodeURI,
 	'%encodeURIComponent%': encodeURIComponent,
-	'%Error%': Error,
+	'%Error%': $Error,
 	'%eval%': eval, // eslint-disable-line no-eval
-	'%EvalError%': EvalError,
+	'%EvalError%': $EvalError,
 	'%Float32Array%': typeof Float32Array === 'undefined' ? undefined : Float32Array,
 	'%Float64Array%': typeof Float64Array === 'undefined' ? undefined : Float64Array,
 	'%FinalizationRegistry%': typeof FinalizationRegistry === 'undefined' ? undefined : FinalizationRegistry,
@@ -5835,8 +6040,8 @@ var INTRINSICS = {
 	'%parseInt%': parseInt,
 	'%Promise%': typeof Promise === 'undefined' ? undefined : Promise,
 	'%Proxy%': typeof Proxy === 'undefined' ? undefined : Proxy,
-	'%RangeError%': RangeError,
-	'%ReferenceError%': ReferenceError,
+	'%RangeError%': $RangeError,
+	'%ReferenceError%': $ReferenceError,
 	'%Reflect%': typeof Reflect === 'undefined' ? undefined : Reflect,
 	'%RegExp%': RegExp,
 	'%Set%': typeof Set === 'undefined' ? undefined : Set,
@@ -5853,7 +6058,7 @@ var INTRINSICS = {
 	'%Uint8ClampedArray%': typeof Uint8ClampedArray === 'undefined' ? undefined : Uint8ClampedArray,
 	'%Uint16Array%': typeof Uint16Array === 'undefined' ? undefined : Uint16Array,
 	'%Uint32Array%': typeof Uint32Array === 'undefined' ? undefined : Uint32Array,
-	'%URIError%': URIError,
+	'%URIError%': $URIError,
 	'%WeakMap%': typeof WeakMap === 'undefined' ? undefined : WeakMap,
 	'%WeakRef%': typeof WeakRef === 'undefined' ? undefined : WeakRef,
 	'%WeakSet%': typeof WeakSet === 'undefined' ? undefined : WeakSet
@@ -5895,6 +6100,7 @@ var doEval = function doEval(name) {
 };
 
 var LEGACY_ALIASES = {
+	__proto__: null,
 	'%ArrayBufferPrototype%': ['ArrayBuffer', 'prototype'],
 	'%ArrayPrototype%': ['Array', 'prototype'],
 	'%ArrayProto_entries%': ['Array', 'prototype', 'entries'],
@@ -5949,7 +6155,7 @@ var LEGACY_ALIASES = {
 };
 
 var bind = __nccwpck_require__(8334);
-var hasOwn = __nccwpck_require__(6339);
+var hasOwn = __nccwpck_require__(2157);
 var $concat = bind.call(Function.call, Array.prototype.concat);
 var $spliceApply = bind.call(Function.apply, Array.prototype.splice);
 var $replace = bind.call(Function.call, String.prototype.replace);
@@ -6118,26 +6324,15 @@ module.exports = $gOPD;
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $defineProperty = GetIntrinsic('%Object.defineProperty%', true);
+var $defineProperty = __nccwpck_require__(6123);
 
 var hasPropertyDescriptors = function hasPropertyDescriptors() {
-	if ($defineProperty) {
-		try {
-			$defineProperty({}, 'a', { value: 1 });
-			return true;
-		} catch (e) {
-			// IE 8 has a broken defineProperty
-			return false;
-		}
-	}
-	return false;
+	return !!$defineProperty;
 };
 
 hasPropertyDescriptors.hasArrayLengthDefineBug = function hasArrayLengthDefineBug() {
 	// node v0.6 has a bug where array lengths can be Set but not Defined
-	if (!hasPropertyDescriptors()) {
+	if (!$defineProperty) {
 		return null;
 	}
 	try {
@@ -6160,13 +6355,17 @@ module.exports = hasPropertyDescriptors;
 
 
 var test = {
+	__proto__: null,
 	foo: {}
 };
 
 var $Object = Object;
 
+/** @type {import('.')} */
 module.exports = function hasProto() {
-	return { __proto__: test }.foo === test.foo && !({ __proto__: null } instanceof $Object);
+	// @ts-expect-error: TS errors on an inherited property for some reason
+	return { __proto__: test }.foo === test.foo
+		&& !(test instanceof $Object);
 };
 
 
@@ -6251,6 +6450,7 @@ module.exports = function hasSymbols() {
 
 var hasSymbols = __nccwpck_require__(7747);
 
+/** @type {import('.')} */
 module.exports = function hasToStringTagShams() {
 	return hasSymbols() && !!Symbol.toStringTag;
 };
@@ -6258,15 +6458,18 @@ module.exports = function hasToStringTagShams() {
 
 /***/ }),
 
-/***/ 6339:
+/***/ 2157:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
+var call = Function.prototype.call;
+var $hasOwn = Object.prototype.hasOwnProperty;
 var bind = __nccwpck_require__(8334);
 
-module.exports = bind.call(Function.call, Object.prototype.hasOwnProperty);
+/** @type {import('.')} */
+module.exports = bind.call(call, $hasOwn);
 
 
 /***/ }),
@@ -6277,11 +6480,10 @@ module.exports = bind.call(Function.call, Object.prototype.hasOwnProperty);
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
-var has = __nccwpck_require__(6339);
+var hasOwn = __nccwpck_require__(2157);
 var channel = __nccwpck_require__(4334)();
 
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 
 var SLOT = {
 	assert: function (O, slot) {
@@ -6314,7 +6516,7 @@ var SLOT = {
 			throw new $TypeError('`slot` must be a string');
 		}
 		var slots = channel.get(O);
-		return !!slots && has(slots, '$' + slot);
+		return !!slots && hasOwn(slots, '$' + slot);
 	},
 	set: function (O, slot, V) {
 		if (!O || (typeof O !== 'object' && typeof O !== 'function')) {
@@ -7787,6 +7989,14 @@ module.exports = function inspect_(obj, options, depth, seen) {
     if (isString(obj)) {
         return markBoxed(inspect(String(obj)));
     }
+    // note: in IE 8, sometimes `global !== window` but both are the prototypes of each other
+    /* eslint-env browser */
+    if (typeof window !== 'undefined' && obj === window) {
+        return '{ [object Window] }';
+    }
+    if (obj === global) {
+        return '{ [object globalThis] }';
+    }
     if (!isDate(obj) && !isRegExp(obj)) {
         var ys = arrObjKeys(obj, inspect);
         var isPlainObject = gPO ? gPO(obj) === Object.prototype : obj instanceof Object || obj.constructor === Object;
@@ -8276,11 +8486,10 @@ module.exports = function isArguments(value) {
 
 
 var callBound = __nccwpck_require__(8803);
-var GetIntrinsic = __nccwpck_require__(4538);
 var isRegex = __nccwpck_require__(6403);
 
 var $exec = callBound('RegExp.prototype.exec');
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 
 module.exports = function regexTester(regex) {
 	if (!isRegex(regex)) {
@@ -8289,6 +8498,56 @@ module.exports = function regexTester(regex) {
 	return function test(s) {
 		return $exec(regex, s) !== null;
 	};
+};
+
+
+/***/ }),
+
+/***/ 4056:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var GetIntrinsic = __nccwpck_require__(4538);
+var define = __nccwpck_require__(4564);
+var hasDescriptors = __nccwpck_require__(176)();
+var gOPD = __nccwpck_require__(8501);
+
+var $TypeError = __nccwpck_require__(6361);
+var $floor = GetIntrinsic('%Math.floor%');
+
+/** @type {import('.')} */
+module.exports = function setFunctionLength(fn, length) {
+	if (typeof fn !== 'function') {
+		throw new $TypeError('`fn` is not a function');
+	}
+	if (typeof length !== 'number' || length < 0 || length > 0xFFFFFFFF || $floor(length) !== length) {
+		throw new $TypeError('`length` must be a positive 32-bit integer');
+	}
+
+	var loose = arguments.length > 2 && !!arguments[2];
+
+	var functionLengthIsConfigurable = true;
+	var functionLengthIsWritable = true;
+	if ('length' in fn && gOPD) {
+		var desc = gOPD(fn, 'length');
+		if (desc && !desc.configurable) {
+			functionLengthIsConfigurable = false;
+		}
+		if (desc && !desc.writable) {
+			functionLengthIsWritable = false;
+		}
+	}
+
+	if (functionLengthIsConfigurable || functionLengthIsWritable || !loose) {
+		if (hasDescriptors) {
+			define(/** @type {Parameters<define>[0]} */ (fn), 'length', length, true, true);
+		} else {
+			define(/** @type {Parameters<define>[0]} */ (fn), 'length', length);
+		}
+	}
+	return fn;
 };
 
 
@@ -8304,7 +8563,7 @@ var GetIntrinsic = __nccwpck_require__(4538);
 var callBound = __nccwpck_require__(8803);
 var inspect = __nccwpck_require__(504);
 
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 var $WeakMap = GetIntrinsic('%WeakMap%', true);
 var $Map = GetIntrinsic('%Map%', true);
 
@@ -8316,49 +8575,58 @@ var $mapSet = callBound('Map.prototype.set', true);
 var $mapHas = callBound('Map.prototype.has', true);
 
 /*
- * This function traverses the list returning the node corresponding to the
- * given key.
- *
- * That node is also moved to the head of the list, so that if it's accessed
- * again we don't need to traverse the whole list. By doing so, all the recently
- * used nodes can be accessed relatively quickly.
- */
+* This function traverses the list returning the node corresponding to the given key.
+*
+* That node is also moved to the head of the list, so that if it's accessed again we don't need to traverse the whole list. By doing so, all the recently used nodes can be accessed relatively quickly.
+*/
+/** @type {import('.').listGetNode} */
 var listGetNode = function (list, key) { // eslint-disable-line consistent-return
-	for (var prev = list, curr; (curr = prev.next) !== null; prev = curr) {
+	/** @type {typeof list | NonNullable<(typeof list)['next']>} */
+	var prev = list;
+	/** @type {(typeof list)['next']} */
+	var curr;
+	for (; (curr = prev.next) !== null; prev = curr) {
 		if (curr.key === key) {
 			prev.next = curr.next;
-			curr.next = list.next;
+			// eslint-disable-next-line no-extra-parens
+			curr.next = /** @type {NonNullable<typeof list.next>} */ (list.next);
 			list.next = curr; // eslint-disable-line no-param-reassign
 			return curr;
 		}
 	}
 };
 
+/** @type {import('.').listGet} */
 var listGet = function (objects, key) {
 	var node = listGetNode(objects, key);
 	return node && node.value;
 };
+/** @type {import('.').listSet} */
 var listSet = function (objects, key, value) {
 	var node = listGetNode(objects, key);
 	if (node) {
 		node.value = value;
 	} else {
 		// Prepend the new node to the beginning of the list
-		objects.next = { // eslint-disable-line no-param-reassign
+		objects.next = /** @type {import('.').ListNode<typeof value>} */ ({ // eslint-disable-line no-param-reassign, no-extra-parens
 			key: key,
 			next: objects.next,
 			value: value
-		};
+		});
 	}
 };
+/** @type {import('.').listHas} */
 var listHas = function (objects, key) {
 	return !!listGetNode(objects, key);
 };
 
+/** @type {import('.')} */
 module.exports = function getSideChannel() {
-	var $wm;
-	var $m;
-	var $o;
+	/** @type {WeakMap<object, unknown>} */ var $wm;
+	/** @type {Map<object, unknown>} */ var $m;
+	/** @type {import('.').RootNode<unknown>} */ var $o;
+
+	/** @type {import('.').Channel} */
 	var channel = {
 		assert: function (key) {
 			if (!channel.has(key)) {
@@ -8409,11 +8677,7 @@ module.exports = function getSideChannel() {
 				$mapSet($m, key, value);
 			} else {
 				if (!$o) {
-					/*
-					 * Initialize the linked list as an empty node, so that we don't have
-					 * to special-case handling of the first node: we can always refer to
-					 * it as (previous node).next, instead of something like (list).head
-					 */
+					// Initialize the linked list as an empty node, so that we don't have to special-case handling of the first node: we can always refer to it as (previous node).next, instead of something like (list).head
 					$o = { key: {}, next: null };
 				}
 				listSet($o, key, value);
@@ -8432,8 +8696,8 @@ module.exports = function getSideChannel() {
 "use strict";
 
 
-var RequireObjectCoercible = __nccwpck_require__(332);
-var ToString = __nccwpck_require__(8780);
+var RequireObjectCoercible = __nccwpck_require__(2177);
+var ToString = __nccwpck_require__(3144);
 var callBound = __nccwpck_require__(8803);
 var $replace = callBound('String.prototype.replace');
 
@@ -8463,7 +8727,7 @@ module.exports = function trim() {
 
 var callBind = __nccwpck_require__(2977);
 var define = __nccwpck_require__(9234);
-var RequireObjectCoercible = __nccwpck_require__(332);
+var RequireObjectCoercible = __nccwpck_require__(2177);
 
 var implementation = __nccwpck_require__(9967);
 var getPolyfill = __nccwpck_require__(9289);
@@ -10055,28 +10319,62 @@ module.exports = require("util");
 
 /***/ }),
 
-/***/ 4178:
+/***/ 6266:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var $isNaN = __nccwpck_require__(5893);
+var $TypeError = __nccwpck_require__(6361);
 
-// http://262.ecma-international.org/5.1/#sec-9.12
+var callBound = __nccwpck_require__(8803);
 
-module.exports = function SameValue(x, y) {
-	if (x === y) { // 0 === -0, but they are not identical.
-		if (x === 0) { return 1 / x === 1 / y; }
-		return true;
+var $push = callBound('Array.prototype.push');
+
+var SameValue = __nccwpck_require__(2663);
+
+var IsArray = __nccwpck_require__(1394);
+var every = __nccwpck_require__(1529);
+var forEach = __nccwpck_require__(8406);
+
+var hasOwn = __nccwpck_require__(2157);
+
+var isKeyedGroup = function (group) {
+	return hasOwn(group, '[[Key]]')
+        && hasOwn(group, '[[Elements]]')
+        && IsArray(group['[[Elements]]']);
+};
+
+// https://tc39.es/ecma262/#sec-add-value-to-keyed-group
+
+module.exports = function AddValueToKeyedGroup(groups, key, value) {
+	if (!IsArray(groups) || (groups.length > 0 && !every(groups, isKeyedGroup))) {
+		throw new $TypeError('Assertion failed: `groups` must be a List of Records with [[Key]] and [[Elements]]');
 	}
-	return $isNaN(x) && $isNaN(y);
+
+	var matched = 0;
+	forEach(groups, function (g) { // step 1
+		if (SameValue(g['[[Key]]'], key)) { // step 2
+			matched += 1;
+			if (matched > 1) {
+				throw new $TypeError('Assertion failed: Exactly one element of groups meets this criterion'); // step 2.a
+			}
+
+			$push(g['[[Elements]]'], value); // step 2.b
+		}
+	});
+
+	if (matched === 0) {
+		var group = { '[[Key]]': key, '[[Elements]]': [value] }; // step 2
+
+		$push(groups, group); // step 3
+	}
 };
 
 
 /***/ }),
 
-/***/ 1656:
+/***/ 6534:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10085,9 +10383,9 @@ module.exports = function SameValue(x, y) {
 var GetIntrinsic = __nccwpck_require__(4538);
 var callBound = __nccwpck_require__(8803);
 
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 
-var IsArray = __nccwpck_require__(9540);
+var IsArray = __nccwpck_require__(9771);
 
 var $apply = GetIntrinsic('%Reflect.apply%', true) || callBound('Function.prototype.apply');
 
@@ -10104,19 +10402,17 @@ module.exports = function Call(F, V) {
 
 /***/ }),
 
-/***/ 9911:
+/***/ 1865:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
+var $TypeError = __nccwpck_require__(6361);
 
-var $TypeError = GetIntrinsic('%TypeError%');
-
-var IsPropertyKey = __nccwpck_require__(8206);
-var OrdinaryDefineOwnProperty = __nccwpck_require__(897);
-var Type = __nccwpck_require__(5877);
+var IsPropertyKey = __nccwpck_require__(7536);
+var OrdinaryDefineOwnProperty = __nccwpck_require__(6166);
+var Type = __nccwpck_require__(4227);
 
 // https://262.ecma-international.org/6.0/#sec-createdataproperty
 
@@ -10139,21 +10435,19 @@ module.exports = function CreateDataProperty(O, P, V) {
 
 /***/ }),
 
-/***/ 9641:
+/***/ 7773:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
+var $TypeError = __nccwpck_require__(6361);
 
-var $TypeError = GetIntrinsic('%TypeError%');
+var CreateDataProperty = __nccwpck_require__(1865);
+var IsPropertyKey = __nccwpck_require__(7536);
+var Type = __nccwpck_require__(4227);
 
-var CreateDataProperty = __nccwpck_require__(9911);
-var IsPropertyKey = __nccwpck_require__(8206);
-var Type = __nccwpck_require__(5877);
-
-// // https://262.ecma-international.org/6.0/#sec-createdatapropertyorthrow
+// // https://262.ecma-international.org/14.0/#sec-createdatapropertyorthrow
 
 module.exports = function CreateDataPropertyOrThrow(O, P, V) {
 	if (Type(O) !== 'Object') {
@@ -10166,28 +10460,27 @@ module.exports = function CreateDataPropertyOrThrow(O, P, V) {
 	if (!success) {
 		throw new $TypeError('unable to create data property');
 	}
-	return success;
 };
 
 
 /***/ }),
 
-/***/ 9327:
+/***/ 6589:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var assertRecord = __nccwpck_require__(2583);
-var fromPropertyDescriptor = __nccwpck_require__(8405);
+var $TypeError = __nccwpck_require__(6361);
 
-var Type = __nccwpck_require__(5877);
+var isPropertyDescriptor = __nccwpck_require__(9148);
+var fromPropertyDescriptor = __nccwpck_require__(8405);
 
 // https://262.ecma-international.org/6.0/#sec-frompropertydescriptor
 
 module.exports = function FromPropertyDescriptor(Desc) {
-	if (typeof Desc !== 'undefined') {
-		assertRecord(Type, 'Property Descriptor', 'Desc', Desc);
+	if (typeof Desc !== 'undefined' && !isPropertyDescriptor(Desc)) {
+		throw new $TypeError('Assertion failed: `Desc` must be a Property Descriptor');
 	}
 
 	return fromPropertyDescriptor(Desc);
@@ -10196,20 +10489,18 @@ module.exports = function FromPropertyDescriptor(Desc) {
 
 /***/ }),
 
-/***/ 4217:
+/***/ 9617:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 
 var inspect = __nccwpck_require__(504);
 
-var IsPropertyKey = __nccwpck_require__(8206);
-var Type = __nccwpck_require__(5877);
+var IsPropertyKey = __nccwpck_require__(7536);
+var Type = __nccwpck_require__(4227);
 
 // https://262.ecma-international.org/6.0/#sec-get-o-p
 
@@ -10229,17 +10520,17 @@ module.exports = function Get(O, P) {
 
 /***/ }),
 
-/***/ 645:
+/***/ 719:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var has = __nccwpck_require__(6339);
+var $TypeError = __nccwpck_require__(6361);
 
-var Type = __nccwpck_require__(5877);
+var hasOwn = __nccwpck_require__(2157);
 
-var assertRecord = __nccwpck_require__(2583);
+var isPropertyDescriptor = __nccwpck_require__(9148);
 
 // https://262.ecma-international.org/5.1/#sec-8.10.1
 
@@ -10248,9 +10539,11 @@ module.exports = function IsAccessorDescriptor(Desc) {
 		return false;
 	}
 
-	assertRecord(Type, 'Property Descriptor', 'Desc', Desc);
+	if (!isPropertyDescriptor(Desc)) {
+		throw new $TypeError('Assertion failed: `Desc` must be a Property Descriptor');
+	}
 
-	if (!has(Desc, '[[Get]]') && !has(Desc, '[[Set]]')) {
+	if (!hasOwn(Desc, '[[Get]]') && !hasOwn(Desc, '[[Set]]')) {
 		return false;
 	}
 
@@ -10260,7 +10553,7 @@ module.exports = function IsAccessorDescriptor(Desc) {
 
 /***/ }),
 
-/***/ 9540:
+/***/ 9771:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10272,7 +10565,7 @@ module.exports = __nccwpck_require__(1394);
 
 /***/ }),
 
-/***/ 1192:
+/***/ 2800:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10285,17 +10578,17 @@ module.exports = __nccwpck_require__(4615);
 
 /***/ }),
 
-/***/ 5712:
+/***/ 1197:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var has = __nccwpck_require__(6339);
+var $TypeError = __nccwpck_require__(6361);
 
-var Type = __nccwpck_require__(5877);
+var hasOwn = __nccwpck_require__(2157);
 
-var assertRecord = __nccwpck_require__(2583);
+var isPropertyDescriptor = __nccwpck_require__(9148);
 
 // https://262.ecma-international.org/5.1/#sec-8.10.2
 
@@ -10304,9 +10597,11 @@ module.exports = function IsDataDescriptor(Desc) {
 		return false;
 	}
 
-	assertRecord(Type, 'Property Descriptor', 'Desc', Desc);
+	if (!isPropertyDescriptor(Desc)) {
+		throw new $TypeError('Assertion failed: `Desc` must be a Property Descriptor');
+	}
 
-	if (!has(Desc, '[[Value]]') && !has(Desc, '[[Writable]]')) {
+	if (!hasOwn(Desc, '[[Value]]') && !hasOwn(Desc, '[[Writable]]')) {
 		return false;
 	}
 
@@ -10316,7 +10611,7 @@ module.exports = function IsDataDescriptor(Desc) {
 
 /***/ }),
 
-/***/ 3480:
+/***/ 1302:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10342,17 +10637,18 @@ module.exports = $preventExtensions
 
 /***/ }),
 
-/***/ 3558:
+/***/ 643:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var assertRecord = __nccwpck_require__(2583);
+var $TypeError = __nccwpck_require__(6361);
 
-var IsAccessorDescriptor = __nccwpck_require__(645);
-var IsDataDescriptor = __nccwpck_require__(5712);
-var Type = __nccwpck_require__(5877);
+var IsAccessorDescriptor = __nccwpck_require__(719);
+var IsDataDescriptor = __nccwpck_require__(1197);
+
+var isPropertyDescriptor = __nccwpck_require__(9148);
 
 // https://262.ecma-international.org/6.0/#sec-isgenericdescriptor
 
@@ -10361,7 +10657,9 @@ module.exports = function IsGenericDescriptor(Desc) {
 		return false;
 	}
 
-	assertRecord(Type, 'Property Descriptor', 'Desc', Desc);
+	if (!isPropertyDescriptor(Desc)) {
+		throw new $TypeError('Assertion failed: `Desc` must be a Property Descriptor');
+	}
 
 	if (!IsAccessorDescriptor(Desc) && !IsDataDescriptor(Desc)) {
 		return true;
@@ -10373,7 +10671,7 @@ module.exports = function IsGenericDescriptor(Desc) {
 
 /***/ }),
 
-/***/ 8206:
+/***/ 7536:
 /***/ ((module) => {
 
 "use strict";
@@ -10388,19 +10686,17 @@ module.exports = function IsPropertyKey(argument) {
 
 /***/ }),
 
-/***/ 7219:
+/***/ 7857:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
+var $TypeError = __nccwpck_require__(6361);
 
-var $TypeError = GetIntrinsic('%TypeError%');
-
-var Get = __nccwpck_require__(4217);
-var ToLength = __nccwpck_require__(3383);
-var Type = __nccwpck_require__(5877);
+var Get = __nccwpck_require__(9617);
+var ToLength = __nccwpck_require__(2029);
+var Type = __nccwpck_require__(4227);
 
 // https://262.ecma-international.org/11.0/#sec-lengthofarraylike
 
@@ -10416,28 +10712,25 @@ module.exports = function LengthOfArrayLike(obj) {
 
 /***/ }),
 
-/***/ 897:
+/***/ 6166:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
-
 var $gOPD = __nccwpck_require__(8501);
-var $SyntaxError = GetIntrinsic('%SyntaxError%');
-var $TypeError = GetIntrinsic('%TypeError%');
+var $SyntaxError = __nccwpck_require__(5474);
+var $TypeError = __nccwpck_require__(6361);
 
-var isPropertyDescriptor = __nccwpck_require__(6609);
+var isPropertyDescriptor = __nccwpck_require__(9148);
 
-var IsAccessorDescriptor = __nccwpck_require__(645);
-var IsDataDescriptor = __nccwpck_require__(5712);
-var IsExtensible = __nccwpck_require__(3480);
-var IsPropertyKey = __nccwpck_require__(8206);
-var ToPropertyDescriptor = __nccwpck_require__(2516);
-var SameValue = __nccwpck_require__(2806);
-var Type = __nccwpck_require__(5877);
-var ValidateAndApplyPropertyDescriptor = __nccwpck_require__(97);
+var IsAccessorDescriptor = __nccwpck_require__(719);
+var IsExtensible = __nccwpck_require__(1302);
+var IsPropertyKey = __nccwpck_require__(7536);
+var ToPropertyDescriptor = __nccwpck_require__(2841);
+var SameValue = __nccwpck_require__(2663);
+var Type = __nccwpck_require__(4227);
+var ValidateAndApplyPropertyDescriptor = __nccwpck_require__(6807);
 
 // https://262.ecma-international.org/6.0/#sec-ordinarydefineownproperty
 
@@ -10448,11 +10741,7 @@ module.exports = function OrdinaryDefineOwnProperty(O, P, Desc) {
 	if (!IsPropertyKey(P)) {
 		throw new $TypeError('Assertion failed: P must be a Property Key');
 	}
-	if (!isPropertyDescriptor({
-		Type: Type,
-		IsDataDescriptor: IsDataDescriptor,
-		IsAccessorDescriptor: IsAccessorDescriptor
-	}, Desc)) {
+	if (!isPropertyDescriptor(Desc)) {
 		throw new $TypeError('Assertion failed: Desc must be a Property Descriptor');
 	}
 	if (!$gOPD) {
@@ -10485,7 +10774,7 @@ module.exports = function OrdinaryDefineOwnProperty(O, P, Desc) {
 
 /***/ }),
 
-/***/ 1102:
+/***/ 7803:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10494,11 +10783,11 @@ module.exports = function OrdinaryDefineOwnProperty(O, P, Desc) {
 var GetIntrinsic = __nccwpck_require__(4538);
 
 var $ObjectCreate = GetIntrinsic('%Object.create%', true);
-var $TypeError = GetIntrinsic('%TypeError%');
-var $SyntaxError = GetIntrinsic('%SyntaxError%');
+var $TypeError = __nccwpck_require__(6361);
+var $SyntaxError = __nccwpck_require__(5474);
 
-var IsArray = __nccwpck_require__(9540);
-var Type = __nccwpck_require__(5877);
+var IsArray = __nccwpck_require__(9771);
+var Type = __nccwpck_require__(4227);
 
 var forEach = __nccwpck_require__(8406);
 
@@ -10549,18 +10838,7 @@ module.exports = function OrdinaryObjectCreate(proto) {
 
 /***/ }),
 
-/***/ 332:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-module.exports = __nccwpck_require__(3300);
-
-
-/***/ }),
-
-/***/ 2806:
+/***/ 2663:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10581,7 +10859,7 @@ module.exports = function SameValue(x, y) {
 
 /***/ }),
 
-/***/ 3921:
+/***/ 7691:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10591,7 +10869,7 @@ var GetIntrinsic = __nccwpck_require__(4538);
 
 var $Number = GetIntrinsic('%Number%');
 var $RegExp = GetIntrinsic('%RegExp%');
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 var $parseInteger = GetIntrinsic('%parseInt%');
 
 var callBound = __nccwpck_require__(8803);
@@ -10607,12 +10885,10 @@ var hasNonWS = regexTester(nonWSregex);
 
 var $trim = __nccwpck_require__(6332);
 
-var Type = __nccwpck_require__(5877);
-
 // https://262.ecma-international.org/13.0/#sec-stringtonumber
 
 module.exports = function StringToNumber(argument) {
-	if (Type(argument) !== 'String') {
+	if (typeof argument !== 'string') {
 		throw new $TypeError('Assertion failed: `argument` is not a String');
 	}
 	if (isBinary(argument)) {
@@ -10634,7 +10910,7 @@ module.exports = function StringToNumber(argument) {
 
 /***/ }),
 
-/***/ 490:
+/***/ 199:
 /***/ ((module) => {
 
 "use strict";
@@ -10647,35 +10923,31 @@ module.exports = function ToBoolean(value) { return !!value; };
 
 /***/ }),
 
-/***/ 3081:
+/***/ 5928:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var abs = __nccwpck_require__(9138);
-var floor = __nccwpck_require__(3491);
-var ToNumber = __nccwpck_require__(7739);
+var ToNumber = __nccwpck_require__(686);
+var truncate = __nccwpck_require__(5301);
 
 var $isNaN = __nccwpck_require__(5893);
 var $isFinite = __nccwpck_require__(7886);
-var $sign = __nccwpck_require__(2250);
 
-// https://262.ecma-international.org/12.0/#sec-tointegerorinfinity
+// https://262.ecma-international.org/14.0/#sec-tointegerorinfinity
 
 module.exports = function ToIntegerOrInfinity(value) {
 	var number = ToNumber(value);
 	if ($isNaN(number) || number === 0) { return 0; }
 	if (!$isFinite(number)) { return number; }
-	var integer = floor(abs(number));
-	if (integer === 0) { return 0; }
-	return $sign(number) * integer;
+	return truncate(number);
 };
 
 
 /***/ }),
 
-/***/ 3383:
+/***/ 2029:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10683,7 +10955,7 @@ module.exports = function ToIntegerOrInfinity(value) {
 
 var MAX_SAFE_INTEGER = __nccwpck_require__(7176);
 
-var ToIntegerOrInfinity = __nccwpck_require__(3081);
+var ToIntegerOrInfinity = __nccwpck_require__(5928);
 
 module.exports = function ToLength(argument) {
 	var len = ToIntegerOrInfinity(argument);
@@ -10695,7 +10967,7 @@ module.exports = function ToLength(argument) {
 
 /***/ }),
 
-/***/ 7739:
+/***/ 686:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10703,12 +10975,12 @@ module.exports = function ToLength(argument) {
 
 var GetIntrinsic = __nccwpck_require__(4538);
 
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 var $Number = GetIntrinsic('%Number%');
 var isPrimitive = __nccwpck_require__(1544);
 
-var ToPrimitive = __nccwpck_require__(3783);
-var StringToNumber = __nccwpck_require__(3921);
+var ToPrimitive = __nccwpck_require__(6523);
+var StringToNumber = __nccwpck_require__(7691);
 
 // https://262.ecma-international.org/13.0/#sec-tonumber
 
@@ -10729,29 +11001,7 @@ module.exports = function ToNumber(argument) {
 
 /***/ }),
 
-/***/ 923:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $Object = GetIntrinsic('%Object%');
-
-var RequireObjectCoercible = __nccwpck_require__(332);
-
-// https://262.ecma-international.org/6.0/#sec-toobject
-
-module.exports = function ToObject(value) {
-	RequireObjectCoercible(value);
-	return $Object(value);
-};
-
-
-/***/ }),
-
-/***/ 3783:
+/***/ 6523:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10771,21 +11021,19 @@ module.exports = function ToPrimitive(input) {
 
 /***/ }),
 
-/***/ 2516:
+/***/ 2841:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var has = __nccwpck_require__(6339);
+var hasOwn = __nccwpck_require__(2157);
 
-var GetIntrinsic = __nccwpck_require__(4538);
+var $TypeError = __nccwpck_require__(6361);
 
-var $TypeError = GetIntrinsic('%TypeError%');
-
-var Type = __nccwpck_require__(5877);
-var ToBoolean = __nccwpck_require__(490);
-var IsCallable = __nccwpck_require__(1192);
+var Type = __nccwpck_require__(4227);
+var ToBoolean = __nccwpck_require__(199);
+var IsCallable = __nccwpck_require__(2800);
 
 // https://262.ecma-international.org/5.1/#sec-8.10.5
 
@@ -10795,26 +11043,26 @@ module.exports = function ToPropertyDescriptor(Obj) {
 	}
 
 	var desc = {};
-	if (has(Obj, 'enumerable')) {
+	if (hasOwn(Obj, 'enumerable')) {
 		desc['[[Enumerable]]'] = ToBoolean(Obj.enumerable);
 	}
-	if (has(Obj, 'configurable')) {
+	if (hasOwn(Obj, 'configurable')) {
 		desc['[[Configurable]]'] = ToBoolean(Obj.configurable);
 	}
-	if (has(Obj, 'value')) {
+	if (hasOwn(Obj, 'value')) {
 		desc['[[Value]]'] = Obj.value;
 	}
-	if (has(Obj, 'writable')) {
+	if (hasOwn(Obj, 'writable')) {
 		desc['[[Writable]]'] = ToBoolean(Obj.writable);
 	}
-	if (has(Obj, 'get')) {
+	if (hasOwn(Obj, 'get')) {
 		var getter = Obj.get;
 		if (typeof getter !== 'undefined' && !IsCallable(getter)) {
 			throw new $TypeError('getter must be a function');
 		}
 		desc['[[Get]]'] = getter;
 	}
-	if (has(Obj, 'set')) {
+	if (hasOwn(Obj, 'set')) {
 		var setter = Obj.set;
 		if (typeof setter !== 'undefined' && !IsCallable(setter)) {
 			throw new $TypeError('setter must be a function');
@@ -10822,7 +11070,7 @@ module.exports = function ToPropertyDescriptor(Obj) {
 		desc['[[Set]]'] = setter;
 	}
 
-	if ((has(desc, '[[Get]]') || has(desc, '[[Set]]')) && (has(desc, '[[Value]]') || has(desc, '[[Writable]]'))) {
+	if ((hasOwn(desc, '[[Get]]') || hasOwn(desc, '[[Set]]')) && (hasOwn(desc, '[[Value]]') || hasOwn(desc, '[[Writable]]'))) {
 		throw new $TypeError('Invalid property descriptor. Cannot both specify accessors and a value or writable attribute');
 	}
 	return desc;
@@ -10831,7 +11079,7 @@ module.exports = function ToPropertyDescriptor(Obj) {
 
 /***/ }),
 
-/***/ 7542:
+/***/ 5417:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10841,8 +11089,8 @@ var GetIntrinsic = __nccwpck_require__(4538);
 
 var $String = GetIntrinsic('%String%');
 
-var ToPrimitive = __nccwpck_require__(3783);
-var ToString = __nccwpck_require__(8780);
+var ToPrimitive = __nccwpck_require__(6523);
+var ToString = __nccwpck_require__(3144);
 
 // https://262.ecma-international.org/6.0/#sec-topropertykey
 
@@ -10854,7 +11102,7 @@ module.exports = function ToPropertyKey(argument) {
 
 /***/ }),
 
-/***/ 8780:
+/***/ 3144:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10863,7 +11111,7 @@ module.exports = function ToPropertyKey(argument) {
 var GetIntrinsic = __nccwpck_require__(4538);
 
 var $String = GetIntrinsic('%String%');
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 
 // https://262.ecma-international.org/6.0/#sec-tostring
 
@@ -10877,7 +11125,7 @@ module.exports = function ToString(argument) {
 
 /***/ }),
 
-/***/ 5877:
+/***/ 4227:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -10900,27 +11148,25 @@ module.exports = function Type(x) {
 
 /***/ }),
 
-/***/ 97:
+/***/ 6807:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 
 var DefineOwnProperty = __nccwpck_require__(2705);
 var isFullyPopulatedPropertyDescriptor = __nccwpck_require__(5724);
-var isPropertyDescriptor = __nccwpck_require__(6609);
+var isPropertyDescriptor = __nccwpck_require__(9148);
 
-var FromPropertyDescriptor = __nccwpck_require__(9327);
-var IsAccessorDescriptor = __nccwpck_require__(645);
-var IsDataDescriptor = __nccwpck_require__(5712);
-var IsGenericDescriptor = __nccwpck_require__(3558);
-var IsPropertyKey = __nccwpck_require__(8206);
-var SameValue = __nccwpck_require__(2806);
-var Type = __nccwpck_require__(5877);
+var FromPropertyDescriptor = __nccwpck_require__(6589);
+var IsAccessorDescriptor = __nccwpck_require__(719);
+var IsDataDescriptor = __nccwpck_require__(1197);
+var IsGenericDescriptor = __nccwpck_require__(643);
+var IsPropertyKey = __nccwpck_require__(7536);
+var SameValue = __nccwpck_require__(2663);
+var Type = __nccwpck_require__(4227);
 
 // https://262.ecma-international.org/13.0/#sec-validateandapplypropertydescriptor
 
@@ -10935,25 +11181,17 @@ module.exports = function ValidateAndApplyPropertyDescriptor(O, P, extensible, D
 	if (!IsPropertyKey(P)) {
 		throw new $TypeError('Assertion failed: P must be a Property Key');
 	}
-	if (Type(extensible) !== 'Boolean') {
+	if (typeof extensible !== 'boolean') {
 		throw new $TypeError('Assertion failed: extensible must be a Boolean');
 	}
-	if (!isPropertyDescriptor({
-		Type: Type,
-		IsDataDescriptor: IsDataDescriptor,
-		IsAccessorDescriptor: IsAccessorDescriptor
-	}, Desc)) {
+	if (!isPropertyDescriptor(Desc)) {
 		throw new $TypeError('Assertion failed: Desc must be a Property Descriptor');
 	}
-	if (Type(current) !== 'Undefined' && !isPropertyDescriptor({
-		Type: Type,
-		IsDataDescriptor: IsDataDescriptor,
-		IsAccessorDescriptor: IsAccessorDescriptor
-	}, current)) {
+	if (typeof current !== 'undefined' && !isPropertyDescriptor(current)) {
 		throw new $TypeError('Assertion failed: current must be a Property Descriptor, or undefined');
 	}
 
-	if (Type(current) === 'Undefined') { // step 2
+	if (typeof current === 'undefined') { // step 2
 		if (!extensible) {
 			return false; // step 2.a
 		}
@@ -10987,10 +11225,15 @@ module.exports = function ValidateAndApplyPropertyDescriptor(O, P, extensible, D
 	}
 
 	// 3. Assert: current is a fully populated Property Descriptor.
-	if (!isFullyPopulatedPropertyDescriptor({
-		IsAccessorDescriptor: IsAccessorDescriptor,
-		IsDataDescriptor: IsDataDescriptor
-	}, current)) {
+	if (
+		!isFullyPopulatedPropertyDescriptor(
+			{
+				IsAccessorDescriptor: IsAccessorDescriptor,
+				IsDataDescriptor: IsDataDescriptor
+			},
+			current
+		)
+	) {
 		throw new $TypeError('`current`, when present, must be a fully populated and valid Property Descriptor');
 	}
 
@@ -11085,32 +11328,11 @@ module.exports = function ValidateAndApplyPropertyDescriptor(O, P, extensible, D
 
 /***/ }),
 
-/***/ 9138:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ 6419:
+/***/ ((module) => {
 
 "use strict";
 
-
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $abs = GetIntrinsic('%Math.abs%');
-
-// http://262.ecma-international.org/5.1/#sec-5.2
-
-module.exports = function abs(x) {
-	return $abs(x);
-};
-
-
-/***/ }),
-
-/***/ 3491:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var Type = __nccwpck_require__(5877);
 
 // var modulo = require('./modulo');
 var $floor = Math.floor;
@@ -11119,7 +11341,7 @@ var $floor = Math.floor;
 
 module.exports = function floor(x) {
 	// return x - modulo(x, 1);
-	if (Type(x) === 'BigInt') {
+	if (typeof x === 'bigint') {
 		return x;
 	}
 	return $floor(x);
@@ -11128,23 +11350,24 @@ module.exports = function floor(x) {
 
 /***/ }),
 
-/***/ 3300:
+/***/ 5301:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
+var floor = __nccwpck_require__(6419);
 
-var $TypeError = GetIntrinsic('%TypeError%');
+var $TypeError = __nccwpck_require__(6361);
 
-// http://262.ecma-international.org/5.1/#sec-9.10
+// https://262.ecma-international.org/14.0/#eqn-truncate
 
-module.exports = function CheckObjectCoercible(value, optMessage) {
-	if (value == null) {
-		throw new $TypeError(optMessage || ('Cannot call method on ' + value));
+module.exports = function truncate(x) {
+	if (typeof x !== 'number' && typeof x !== 'bigint') {
+		throw new $TypeError('argument must be a Number or a BigInt');
 	}
-	return value;
+	var result = x < 0 ? -floor(-x) : floor(x);
+	return result === 0 ? 0 : result; // in the spec, these are math values, so we filter out -0 here
 };
 
 
@@ -11190,9 +11413,7 @@ module.exports = function Type(x) {
 
 var hasPropertyDescriptors = __nccwpck_require__(176);
 
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $defineProperty = hasPropertyDescriptors() && GetIntrinsic('%Object.defineProperty%', true);
+var $defineProperty = __nccwpck_require__(6123);
 
 var hasArrayLengthDefineBug = hasPropertyDescriptors.hasArrayLengthDefineBug();
 
@@ -11265,96 +11486,19 @@ module.exports = $Array.isArray || function IsArray(argument) {
 
 /***/ }),
 
-/***/ 2583:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ 1529:
+/***/ ((module) => {
 
 "use strict";
 
 
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $TypeError = GetIntrinsic('%TypeError%');
-var $SyntaxError = GetIntrinsic('%SyntaxError%');
-
-var has = __nccwpck_require__(6339);
-var isInteger = __nccwpck_require__(7212);
-
-var isMatchRecord = __nccwpck_require__(3313);
-
-var predicates = {
-	// https://262.ecma-international.org/6.0/#sec-property-descriptor-specification-type
-	'Property Descriptor': function isPropertyDescriptor(Desc) {
-		var allowed = {
-			'[[Configurable]]': true,
-			'[[Enumerable]]': true,
-			'[[Get]]': true,
-			'[[Set]]': true,
-			'[[Value]]': true,
-			'[[Writable]]': true
-		};
-
-		if (!Desc) {
+module.exports = function every(array, predicate) {
+	for (var i = 0; i < array.length; i += 1) {
+		if (!predicate(array[i], i, array)) {
 			return false;
 		}
-		for (var key in Desc) { // eslint-disable-line
-			if (has(Desc, key) && !allowed[key]) {
-				return false;
-			}
-		}
-
-		var isData = has(Desc, '[[Value]]');
-		var IsAccessor = has(Desc, '[[Get]]') || has(Desc, '[[Set]]');
-		if (isData && IsAccessor) {
-			throw new $TypeError('Property Descriptors may not be both accessor and data descriptors');
-		}
-		return true;
-	},
-	// https://262.ecma-international.org/13.0/#sec-match-records
-	'Match Record': isMatchRecord,
-	'Iterator Record': function isIteratorRecord(value) {
-		return has(value, '[[Iterator]]') && has(value, '[[NextMethod]]') && has(value, '[[Done]]');
-	},
-	'PromiseCapability Record': function isPromiseCapabilityRecord(value) {
-		return !!value
-			&& has(value, '[[Resolve]]')
-			&& typeof value['[[Resolve]]'] === 'function'
-			&& has(value, '[[Reject]]')
-			&& typeof value['[[Reject]]'] === 'function'
-			&& has(value, '[[Promise]]')
-			&& value['[[Promise]]']
-			&& typeof value['[[Promise]]'].then === 'function';
-	},
-	'AsyncGeneratorRequest Record': function isAsyncGeneratorRequestRecord(value) {
-		return !!value
-			&& has(value, '[[Completion]]') // TODO: confirm is a completion record
-			&& has(value, '[[Capability]]')
-			&& predicates['PromiseCapability Record'](value['[[Capability]]']);
-	},
-	'RegExp Record': function isRegExpRecord(value) {
-		return value
-			&& has(value, '[[IgnoreCase]]')
-			&& typeof value['[[IgnoreCase]]'] === 'boolean'
-			&& has(value, '[[Multiline]]')
-			&& typeof value['[[Multiline]]'] === 'boolean'
-			&& has(value, '[[DotAll]]')
-			&& typeof value['[[DotAll]]'] === 'boolean'
-			&& has(value, '[[Unicode]]')
-			&& typeof value['[[Unicode]]'] === 'boolean'
-			&& has(value, '[[CapturingGroupsCount]]')
-			&& typeof value['[[CapturingGroupsCount]]'] === 'number'
-			&& isInteger(value['[[CapturingGroupsCount]]'])
-			&& value['[[CapturingGroupsCount]]'] >= 0;
 	}
-};
-
-module.exports = function assertRecord(Type, recordType, argumentName, value) {
-	var predicate = predicates[recordType];
-	if (typeof predicate !== 'function') {
-		throw new $SyntaxError('unknown record type: ' + recordType);
-	}
-	if (Type(value) !== 'Object' || !predicate(value)) {
-		throw new $TypeError(argumentName + ' must be a ' + recordType);
-	}
+	return true;
 };
 
 
@@ -11424,67 +11568,19 @@ module.exports = function (x) { return (typeof x === 'number' || typeof x === 'b
 /***/ }),
 
 /***/ 5724:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
+var isPropertyDescriptor = __nccwpck_require__(9148);
+
 module.exports = function isFullyPopulatedPropertyDescriptor(ES, Desc) {
-	return !!Desc
+	return isPropertyDescriptor(Desc)
 		&& typeof Desc === 'object'
 		&& '[[Enumerable]]' in Desc
 		&& '[[Configurable]]' in Desc
 		&& (ES.IsAccessorDescriptor(Desc) || ES.IsDataDescriptor(Desc));
-};
-
-
-/***/ }),
-
-/***/ 7212:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $abs = GetIntrinsic('%Math.abs%');
-var $floor = GetIntrinsic('%Math.floor%');
-
-var $isNaN = __nccwpck_require__(5893);
-var $isFinite = __nccwpck_require__(7886);
-
-module.exports = function isInteger(argument) {
-	if (typeof argument !== 'number' || $isNaN(argument) || !$isFinite(argument)) {
-		return false;
-	}
-	var absValue = $abs(argument);
-	return $floor(absValue) === absValue;
-};
-
-
-
-/***/ }),
-
-/***/ 3313:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var has = __nccwpck_require__(6339);
-
-// https://262.ecma-international.org/13.0/#sec-match-records
-
-module.exports = function isMatchRecord(record) {
-	return (
-		has(record, '[[StartIndex]]')
-        && has(record, '[[EndIndex]]')
-        && record['[[StartIndex]]'] >= 0
-        && record['[[EndIndex]]'] >= record['[[StartIndex]]']
-        && String(parseInt(record['[[StartIndex]]'], 10)) === String(record['[[StartIndex]]'])
-        && String(parseInt(record['[[EndIndex]]'], 10)) === String(record['[[EndIndex]]'])
-	);
 };
 
 
@@ -11516,69 +11612,56 @@ module.exports = function isPrimitive(value) {
 
 /***/ }),
 
-/***/ 6609:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var has = __nccwpck_require__(6339);
-var $TypeError = GetIntrinsic('%TypeError%');
-
-module.exports = function IsPropertyDescriptor(ES, Desc) {
-	if (ES.Type(Desc) !== 'Object') {
-		return false;
-	}
-	var allowed = {
-		'[[Configurable]]': true,
-		'[[Enumerable]]': true,
-		'[[Get]]': true,
-		'[[Set]]': true,
-		'[[Value]]': true,
-		'[[Writable]]': true
-	};
-
-	for (var key in Desc) { // eslint-disable-line no-restricted-syntax
-		if (has(Desc, key) && !allowed[key]) {
-			return false;
-		}
-	}
-
-	if (ES.IsDataDescriptor(Desc) && ES.IsAccessorDescriptor(Desc)) {
-		throw new $TypeError('Property Descriptors may not be both accessor and data descriptors');
-	}
-	return true;
-};
-
-
-/***/ }),
-
 /***/ 7176:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var GetIntrinsic = __nccwpck_require__(4538);
-
-var $Math = GetIntrinsic('%Math%');
-var $Number = GetIntrinsic('%Number%');
-
-module.exports = $Number.MAX_SAFE_INTEGER || $Math.pow(2, 53) - 1;
-
-
-/***/ }),
-
-/***/ 2250:
 /***/ ((module) => {
 
 "use strict";
 
 
-module.exports = function sign(number) {
-	return number >= 0 ? 1 : -1;
+module.exports = Number.MAX_SAFE_INTEGER || 9007199254740991; // Math.pow(2, 53) - 1;
+
+
+/***/ }),
+
+/***/ 9148:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var $TypeError = __nccwpck_require__(6361);
+
+var hasOwn = __nccwpck_require__(2157);
+
+var allowed = {
+	__proto__: null,
+	'[[Configurable]]': true,
+	'[[Enumerable]]': true,
+	'[[Get]]': true,
+	'[[Set]]': true,
+	'[[Value]]': true,
+	'[[Writable]]': true
+};
+
+// https://262.ecma-international.org/6.0/#sec-property-descriptor-specification-type
+
+module.exports = function isPropertyDescriptor(Desc) {
+	if (!Desc || typeof Desc !== 'object') {
+		return false;
+	}
+
+	for (var key in Desc) { // eslint-disable-line
+		if (hasOwn(Desc, key) && !allowed[key]) {
+			return false;
+		}
+	}
+
+	var isData = hasOwn(Desc, '[[Value]]') || hasOwn(Desc, '[[Writable]]');
+	var IsAccessor = hasOwn(Desc, '[[Get]]') || hasOwn(Desc, '[[Set]]');
+	if (isData && IsAccessor) {
+		throw new $TypeError('Property Descriptors may not be both accessor and data descriptors');
+	}
+	return true;
 };
 
 
