@@ -1,15 +1,17 @@
 name: "units-test"
 
-on: push
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
   # unit tests
   units:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - run: npm ci
-    - run: npm test
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test
 
   # test action works running from the graph
   action-test-success:
@@ -19,27 +21,27 @@ jobs:
       RUN_FAILURE_TEST: false
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: ./
-      with:
-        result-path: "__tests__/xml/success*.xml"
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          result-path: "__tests__/xml/success*.xml"
 
   action-test-success-with-warnings:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: ./
-      with:
-        result-path: "__tests__/xml/failure2.xml"
-        fail-on-warning: false
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          result-path: "__tests__/xml/failure2.xml"
+          fail-on-warning: false
 
   action-test-error:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: ./
-      with:
-        result-path: "__tests__/xml/failure*.xml"
-      continue-on-error: true
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          result-path: "__tests__/xml/failure*.xml"
+        continue-on-error: true
