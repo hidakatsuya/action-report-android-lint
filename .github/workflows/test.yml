@@ -1,45 +1,90 @@
-name: "units-test"
+name: Test
 
 on: push
 
 jobs:
+  prepare-dist-for-dependabot-updates:
+    if: startsWith(github.ref, 'refs/heads/depenabot/')
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+      - run: npm run prepare
+      - run: git status
+      - run: |
+          git add .
+          git commit -m "Built and updated the distribution scripts"
+          git push origin HEAD
+        env:
+          GIT_AUTHOR_NAME: GitHub Actions
+          GIT_AUTHOR_EMAIL: action@github.com
+          GIT_COMMITTER_NAME: GitHub Actions
+          GIT_COMMITTER_EMAIL: action@github.com
+
+  check-dist:
+    needs: prepare-dist-for-dependabot-updates
+    if: ${{ !failure() }}
+
+    uses: ./.github/workflows/check-dist.yml
+
   # unit tests
   units:
+    needs: check-dist
+    if: ${{ !failure() }}
+
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - run: npm ci
-    - run: npm test
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test
 
   # test action works running from the graph
   action-test-success:
+    needs: check-dist
+    if: ${{ !failure() }}
+
     runs-on: ubuntu-latest
 
     env:
       RUN_FAILURE_TEST: false
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: ./
-      with:
-        result-path: "__tests__/xml/success*.xml"
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          result-path: "__tests__/xml/success*.xml"
 
   action-test-success-with-warnings:
+    needs: check-dist
+    if: ${{ !failure() }}
+
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: ./
-      with:
-        result-path: "__tests__/xml/failure2.xml"
-        fail-on-warning: false
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          result-path: "__tests__/xml/failure2.xml"
+          fail-on-warning: false
 
   action-test-error:
+    needs: check-dist
+    if: ${{ !failure() }}
+
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: ./
-      with:
-        result-path: "__tests__/xml/failure*.xml"
-      continue-on-error: true
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          result-path: "__tests__/xml/failure*.xml"
+        continue-on-error: true
