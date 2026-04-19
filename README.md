@@ -15,12 +15,12 @@ See also [Job Summaries for unit-test workflow results](https://github.com/hidak
     run: ./gradlew lint
 
   - name: Check and report lint results
-    uses: hidakatsuya/action-report-android-lint@v1.2.3
+    uses: hidakatsuya/action-report-android-lint@v1.3.0
     with:
       result-path: 'app/build/reports/lint-results-debug.xml'
 ```
 
-Alternatively, you can specify a major version, such as `hidakatsuya/action-report-android-lint@v1`.
+Alternatively, you can specify a major version tags, such as `hidakatsuya/action-report-android-lint@v1`, but major version tags are NOT an immutable release.
 
 ### result-path
 
