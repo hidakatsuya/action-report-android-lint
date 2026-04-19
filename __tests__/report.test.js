@@ -1,6 +1,7 @@
-const report = require("../src/report")
-const core = require("@actions/core")
-const { Issue, Result, Results } = require("../src/check")
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import * as core from "@actions/core"
+import report from "../src/report.mjs"
+import { Issue, Result, Results } from "../src/check.mjs"
 
 const baseDir = "/path/to"
 
@@ -25,7 +26,7 @@ function buildIssue({
 
 beforeEach(() => {
   core.summary.emptyBuffer()
-  core.summary.write = jest.fn()
+  core.summary.write = vi.fn()
 })
 
 afterEach(() => {
