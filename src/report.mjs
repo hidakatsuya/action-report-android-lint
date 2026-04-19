@@ -1,4 +1,4 @@
-const path = require("path")
+import path from "node:path"
 
 function buildDetails(issuesEachFile, baseDir) {
   if (Object.keys(issuesEachFile).length === 0) return null
@@ -50,11 +50,11 @@ function resultIcon(resultStatus) {
     case "success":
       return "✅"
     default:
-      throw new Error(`Invalid result status: ${results.status}`)
+      throw new Error(`Invalid result status: ${resultStatus}`)
   }
 }
 
-async function report({ results, core, baseDir }) {
+export default async function report({ results, core, baseDir }) {
   core.summary.addHeading(`${resultIcon(results.status)} Android Lint`, 2)
 
   if (results.failures.length === 0) {
@@ -76,5 +76,3 @@ async function report({ results, core, baseDir }) {
   }
   await core.summary.write()
 }
-
-module.exports = report

@@ -1,8 +1,16 @@
-const report = require("../src/report")
-const core = require("@actions/core")
-const { Issue, Result, Results } = require("../src/check")
-
 const baseDir = "/path/to"
+
+let core
+let report
+let Issue
+let Result
+let Results
+
+beforeAll(async () => {
+  core = await import("@actions/core");
+  ({ default: report } = await import("../src/report.mjs"));
+  ({ Issue, Result, Results } = await import("../src/check.mjs"));
+})
 
 function buildIssue({
   severity,

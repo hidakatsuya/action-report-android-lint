@@ -1,9 +1,9 @@
-const fs = require("fs")
-const glob = require("@actions/glob")
-const { XMLParser } = require("fast-xml-parser")
-const group = require("array.prototype.group")
+import { readFileSync } from "node:fs"
+import * as glob from "@actions/glob"
+import { XMLParser } from "fast-xml-parser"
+import group from "array.prototype.group"
 
-class Issue {
+export class Issue {
   /**
     * Example of parsed issue:
     * {
@@ -82,7 +82,7 @@ class Issue {
   }
 }
 
-class Result {
+export class Result {
   #status = null
   #errors = null
   #warnings = null
@@ -117,7 +117,7 @@ class Result {
   }
 }
 
-class Results {
+export class Results {
   constructor(results) {
     this.results = results
     this.#initStatus()
@@ -141,11 +141,11 @@ class Results {
   }
 
   #initStatus() {
-    const statsues = this.results.map(({ result }) => result.status)
+    const statuses = this.results.map(({ result }) => result.status)
 
-    if (statsues.includes("error")) {
+    if (statuses.includes("error")) {
       this.status = "error"
-    } else if (statsues.includes("warning")) {
+    } else if (statuses.includes("warning")) {
       this.status = "warning"
     } else {
       this.status = "success"
@@ -187,12 +187,12 @@ async function fetchXML(pathPattern, followSymbolicLinks) {
   const paths = await globber.glob()
 
   return paths.map(path => {
-    const data = fs.readFileSync(path, { encoding: "utf-8" })
+    const data = readFileSync(path, { encoding: "utf-8" })
     return { path, data }
   })
 }
 
-async function check({ pathPattern, followSymbolicLinks = true }) {
+export async function check({ pathPattern, followSymbolicLinks = true }) {
   const xmls = await fetchXML(pathPattern, followSymbolicLinks)
 
   if (xmls.length === 0) {
@@ -204,11 +204,4 @@ async function check({ pathPattern, followSymbolicLinks = true }) {
   })
 
   return new Results(results)
-}
-
-module.exports = {
-  check,
-  Issue,
-  Result,
-  Results
 }

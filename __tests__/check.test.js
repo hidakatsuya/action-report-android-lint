@@ -1,5 +1,10 @@
-const { check } = require("../src/check")
 const path = require("path")
+
+let check
+
+beforeAll(async () => {
+  ({ check } = await import("../src/check.mjs"))
+})
 
 describe("single XML file", () => {
   test("when the results is success", async () => {
