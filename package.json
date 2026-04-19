@@ -5,7 +5,7 @@
   "main": "src/index.mjs",
   "scripts": {
     "prepare": "ncc build src/index.mjs -o dist --source-map --license licenses.txt",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js"
+    "test": "vitest run"
   },
   "repository": {
     "type": "git",
@@ -30,6 +30,6 @@
   },
   "devDependencies": {
     "@vercel/ncc": "^0.38.4",
-    "jest": "^30.2.0"
+    "vitest": "^3.2.4"
   }
 }

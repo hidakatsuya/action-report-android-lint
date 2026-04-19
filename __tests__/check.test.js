@@ -1,10 +1,9 @@
-const path = require("path")
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { describe, expect, test } from "vitest"
+import { check } from "../src/check.mjs"
 
-let check
-
-beforeAll(async () => {
-  ({ check } = await import("../src/check.mjs"))
-})
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 describe("single XML file", () => {
   test("when the results is success", async () => {

@@ -1,16 +1,9 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import * as core from "@actions/core"
+import report from "../src/report.mjs"
+import { Issue, Result, Results } from "../src/check.mjs"
+
 const baseDir = "/path/to"
-
-let core
-let report
-let Issue
-let Result
-let Results
-
-beforeAll(async () => {
-  core = await import("@actions/core");
-  ({ default: report } = await import("../src/report.mjs"));
-  ({ Issue, Result, Results } = await import("../src/check.mjs"));
-})
 
 function buildIssue({
   severity,
@@ -33,7 +26,7 @@ function buildIssue({
 
 beforeEach(() => {
   core.summary.emptyBuffer()
-  core.summary.write = jest.fn()
+  core.summary.write = vi.fn()
 })
 
 afterEach(() => {

@@ -1,24 +1,21 @@
-const path = require("path")
-const process = require("process")
+import path from "node:path"
+import process from "node:process"
+import { fileURLToPath } from "node:url"
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
+import { check } from "../src/check.mjs"
+import report from "../src/report.mjs"
+import { createRun } from "../src/run.mjs"
 
-let check
-let createRun
-let report
-
-beforeAll(async () => {
-  ({ check } = await import("../src/check.mjs"));
-  ({ createRun } = await import("../src/run.mjs"));
-  ({ default: report } = await import("../src/report.mjs"));
-})
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 function buildCore() {
   return {
     getInput(name) {
       return process.env[`INPUT_${name.replace(/ /g, "_").toUpperCase()}`]
     },
-    setFailed: jest.fn(),
+    setFailed: vi.fn(),
     summary: {
-      write: jest.fn(),
+      write: vi.fn(),
       addHeading() { return this },
       addRaw() { return this },
       wrap(tag, text) { return `<${tag}>${text}</${tag}>` },
